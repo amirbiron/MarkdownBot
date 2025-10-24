@@ -39,7 +39,6 @@ if (!process.env.PUPPETEER_EXECUTABLE_PATH) {
   }
 }
 const TelegramBot = require('node-telegram-bot-api');
-const express = require('express');
 const Database = require('./database/db');
 const CommandHandler = require('./handlers/commandHandler');
 const MessageHandler = require('./handlers/messageHandler');
@@ -55,28 +54,6 @@ if (!token) {
 } else {
   bot = new TelegramBot(token, { polling: true });
 }
-
-// ========================================
-// Express Server (for Render.com health check)
-// ========================================
-const app = express();
-const PORT = process.env.PORT || 3000;
-
-app.get('/', (req, res) => {
-  res.send('🤖 Markdown Trainer Bot is running!');
-});
-
-app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'healthy',
-    uptime: process.uptime(),
-    timestamp: new Date().toISOString()
-  });
-});
-
-app.listen(PORT, () => {
-  console.log(`✅ Server is running on port ${PORT}`);
-});
 
 // ========================================
 // Database Initialization
