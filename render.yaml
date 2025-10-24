@@ -7,11 +7,9 @@ services:
     startCommand: npm start
     envVars:
       - key: NODE_VERSION
-        value: 18.20.4
+        value: 20.17.0
       - key: NODE_ENV
         value: production
-      - key: PORT
-        value: 3000
       - key: DATABASE_PATH
         value: ./database/users.db
       - key: SANDBOX_ENABLED
@@ -20,6 +18,8 @@ services:
         value: true
       - key: PUPPETEER_PRODUCT
         value: chrome
+      - key: PUPPETEER_CACHE_DIR
+        value: /opt/render/.cache/puppeteer
       - key: TELEGRAM_BOT_TOKEN
         sync: false
     healthCheckPath: /health
