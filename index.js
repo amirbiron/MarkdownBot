@@ -9,7 +9,13 @@ const MessageHandler = require('./handlers/messageHandler');
 // Bot Initialization
 // ========================================
 const token = process.env.TELEGRAM_BOT_TOKEN;
-const bot = new TelegramBot(token, { polling: true });
+let bot = null;
+
+if (!token) {
+  console.warn('⚠️ לא הוגדר TELEGRAM_BOT_TOKEN — השירות יעלה במצב בריאות בלבד (ללא בוט)');
+} else {
+  bot = new TelegramBot(token, { polling: true });
+}
 
 // ========================================
 // Express Server (for Render.com health check)
@@ -42,69 +48,78 @@ console.log('✅ Database initialized');
 // ========================================
 // Initialize Handlers
 // ========================================
-const commandHandler = new CommandHandler(bot, db);
-const messageHandler = new MessageHandler(bot, db);
+let commandHandler = null;
+let messageHandler = null;
+
+if (bot) {
+  commandHandler = new CommandHandler(bot, db);
+  messageHandler = new MessageHandler(bot, db);
+}
 
 // ========================================
 // Bot Event Listeners
 // ========================================
 
-// Handle /start command
-bot.onText(/\/start/, (msg) => {
-  commandHandler.handleStart(msg);
-});
+if (bot && commandHandler && messageHandler) {
+  // Handle /start command
+  bot.onText(/\/start/, (msg) => {
+    commandHandler.handleStart(msg);
+  });
 
-// Handle /help command
-bot.onText(/\/help/, (msg) => {
-  commandHandler.handleHelp(msg);
-});
+  // Handle /help command
+  bot.onText(/\/help/, (msg) => {
+    commandHandler.handleHelp(msg);
+  });
 
-// Handle /sandbox command
-bot.onText(/\/sandbox/, (msg) => {
-  commandHandler.handleSandbox(msg);
-});
+  // Handle /sandbox command
+  bot.onText(/\/sandbox/, (msg) => {
+    commandHandler.handleSandbox(msg);
+  });
 
-// Handle /exit command (exit sandbox mode)
-bot.onText(/\/exit/, (msg) => {
-  commandHandler.handleExit(msg);
-});
+  // Handle /exit command (exit sandbox mode)
+  bot.onText(/\/exit/, (msg) => {
+    commandHandler.handleExit(msg);
+  });
 
-// Handle /cheatsheet command
-bot.onText(/\/cheatsheet/, (msg) => {
-  commandHandler.handleCheatsheet(msg);
-});
+  // Handle /cheatsheet command
+  bot.onText(/\/cheatsheet/, (msg) => {
+    commandHandler.handleCheatsheet(msg);
+  });
 
-// Handle /progress command (show user progress)
-bot.onText(/\/progress/, (msg) => {
-  commandHandler.handleProgress(msg);
-});
+  // Handle /progress command (show user progress)
+  bot.onText(/\/progress/, (msg) => {
+    commandHandler.handleProgress(msg);
+  });
 
-// Handle /next command (next lesson)
-bot.onText(/\/next/, (msg) => {
-  commandHandler.handleNext(msg);
-});
+  // Handle /next command (next lesson)
+  bot.onText(/\/next/, (msg) => {
+    commandHandler.handleNext(msg);
+  });
 
-// Handle callback queries (button clicks)
-bot.on('callback_query', (query) => {
-  messageHandler.handleCallbackQuery(query);
-});
+  // Handle callback queries (button clicks)
+  bot.on('callback_query', (query) => {
+    messageHandler.handleCallbackQuery(query);
+  });
 
-// Handle all text messages (for sandbox mode and general chat)
-bot.on('message', (msg) => {
-  // Skip if it's a command
-  if (msg.text && msg.text.startsWith('/')) {
-    return;
-  }
-  
-  messageHandler.handleTextMessage(msg);
-});
+  // Handle all text messages (for sandbox mode and general chat)
+  bot.on('message', (msg) => {
+    // Skip if it's a command
+    if (msg.text && msg.text.startsWith('/')) {
+      return;
+    }
+    
+    messageHandler.handleTextMessage(msg);
+  });
+}
 
 // ========================================
 // Error Handling
 // ========================================
-bot.on('polling_error', (error) => {
-  console.error('❌ Polling error:', error.code, error.message);
-});
+if (bot) {
+  bot.on('polling_error', (error) => {
+    console.error('❌ Polling error:', error.code, error.message);
+  });
+}
 
 process.on('uncaughtException', (error) => {
   console.error('❌ Uncaught Exception:', error);
@@ -120,7 +135,9 @@ process.on('unhandledRejection', (reason, promise) => {
 const gracefulShutdown = () => {
   console.log('\n🛑 Shutting down gracefully...');
   
-  bot.stopPolling();
+  if (bot) {
+    bot.stopPolling();
+  }
   db.close();
   
   process.exit(0);
