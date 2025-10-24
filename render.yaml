@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: markdown-trainer-bot
+    env: node
+    plan: free
+    buildCommand: npm install && npx puppeteer browsers install chrome
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: DATABASE_PATH
+        value: ./database/users.db
+      - key: SANDBOX_ENABLED
+        value: true
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+    healthCheckPath: /health
