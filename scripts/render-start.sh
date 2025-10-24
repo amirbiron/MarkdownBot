@@ -40,7 +40,7 @@ fi
 LOG_FILE="/tmp/puppeteer-install-$(date +%s).log"
 log "Installing Chrome via Puppeteer CLI (logs: $LOG_FILE)"
 set +e
-{"${TIMEOUT_PREFIX[@]}" npx puppeteer browsers install chrome --verbose; } 2>&1 | tee -a "$LOG_FILE"
+"${TIMEOUT_PREFIX[@]}" npx puppeteer browsers install chrome --verbose 2>&1 | tee -a "$LOG_FILE"
 RC=${PIPESTATUS[0]:-0}
 set -e
 
@@ -48,7 +48,7 @@ if [[ $RC -ne 0 ]]; then
   log "First attempt failed (rc=$RC). Retrying with dl.google.com host"
   export PUPPETEER_DOWNLOAD_HOST="https://dl.google.com"
   set +e
-  {"${TIMEOUT_PREFIX[@]}" npx puppeteer browsers install chrome --verbose; } 2>&1 | tee -a "$LOG_FILE"
+  "${TIMEOUT_PREFIX[@]}" npx puppeteer browsers install chrome --verbose 2>&1 | tee -a "$LOG_FILE"
   RC=${PIPESTATUS[0]:-0}
   set -e
 fi
