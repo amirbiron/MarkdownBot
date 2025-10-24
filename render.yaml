@@ -3,7 +3,7 @@ services:
     name: markdown-trainer-bot
     env: node
     plan: free
-    buildCommand: npm install && npx puppeteer browsers install chrome
+    buildCommand: npm install --omit=dev && npx puppeteer browsers install chrome
     startCommand: npm start
     envVars:
       - key: NODE_ENV
@@ -14,6 +14,10 @@ services:
         value: ./database/users.db
       - key: SANDBOX_ENABLED
         value: true
+      - key: PUPPETEER_SKIP_DOWNLOAD
+        value: true
+      - key: PUPPETEER_PRODUCT
+        value: chrome
       - key: TELEGRAM_BOT_TOKEN
         sync: false
     healthCheckPath: /health

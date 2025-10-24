@@ -1,0 +1,191 @@
+# Markdown Trainer Bot – Style Rules (Node.js & Telegram Bot)
+
+> מתי להשתמש: בכל שינוי/PR – כללי סגנון ותשובות
+
+---
+
+## כללי כתיבה
+
+- תחשוב ותענה תמיד בעברית
+- כתוב בשפה פשוטה ומובנת, הימנע ממילים גבוהות
+- שמור על טון עניו – הסבר כאילו אתה מדבר עם חבר טוב
+- כשיש כמה אפשרויות – הצג קודם את הפתרון הפשוט והאמין ביותר
+
+---
+
+## הימנעות ממחיקות קבצים בטסטים ובסקריפטים
+
+> מתי להשתמש: טסטים/סקריפטים שנוגעים לקבצים או ניקוי
+
+1) עבוד רק על תיקיות זמניות
+- השתמש בתיקיות `tmp`/`/tmp/<uuid>` לכל קלט/פלט בטסטים וסקריפטים
+- אל תכתוב או תמחק ב-root של הפרויקט או בתיקיות קוד מקור
+
+2) קבע ENV/קונפיג למסלולי tmp בלבד
+- ודא ש-ENV כמו `OUTPUT_DIR`/`WORKDIR` מצביעים לתת-תיקיית tmp
+- בדוק שהם לא ריקים לפני שימוש (אל תיפול ל-`"."` כברירת מחדל)
+
+3) אל תשתמש בגלובים גורפים
+- הימנע מ-`rm -rf */*` או תבניות כמו `build*`
+- העדף allowlist לתת-תיקיה ספציפית בלבד
+
+4) סורגי בטיחות לפני מחיקה
+- אל תמחק אם הנתיב לא מתחת ל-allowlist
+- אל תמחק נתיבים מסוכנים: `/`, `.` או ספריית הפרויקט
+
+5) הימנע משינוי cwd
+- אם חייבים, שמור/שחזר cwd והשתמש בנתיבים מוחלטים למחיקה
+
+6) במקביליות – הפרד תיקיות עבודה
+- לכל ריצה/טסט UUID ייחודי (למשל: `/tmp/markdown-bot-<uuid>`)
+
+7) בדוק תקלות מוקדם
+- ניתן להחמיר הרשאות כתיבה על `src` בזמן טסטים
+- כרוך קריאות מחיקה ב-wrapper בטוח כדי לעלות חריגה מוקדם
+
+דוגמת Node.js למחיקה בטוחה:
+
+```javascript
+const fs = require('fs');
+const path = require('path');
+
+function safeRmrf(targetPath, allowUnder) {
+  if (!targetPath || !allowUnder) throw new Error('empty path');
+  const rpTarget = path.resolve(String(targetPath));
+  const rpBase = path.resolve(String(allowUnder));
+
+  const projectRoot = process.cwd();
+  const forbidden = ['/', projectRoot];
+  if (forbidden.includes(rpTarget) || rpTarget === path.parse(rpTarget).root) {
+    throw new Error(`unsafe path: ${rpTarget}`);
+  }
+
+  if (!rpTarget.startsWith(rpBase + path.sep)) {
+    throw new Error('outside allowlist');
+  }
+
+  fs.rmSync(rpTarget, { recursive: true, force: false });
+}
+```
+
+בדיקת קוד לאיתור מחיקות לא בטוחות:
+
+```bash
+rg -n "(shutil.rmtree|os.remove|Path.unlink|rm -rf|rimraf)" -S
+```
+
+שחזור לאחר מחיקה בטעות:
+- אל תבצע merge/PR כדי לא לדרוס היסטוריה
+- השתמש ב-`git restore`/`git checkout` לקבצים או `git revert` לקומיטים
+
+---
+
+## קישור לתיעוד והקשר
+
+- הסתמך על תיעוד הפרויקט ב-`README.md`
+- קובץ זה הוא מדיניות מחייבת לצוות; יש להפנות אליו ב-PRs
+- בסיום משימה: הצע (במידת הצורך) לעדכן/להרחיב את ה-README
+
+---
+
+## כללי שימוש ב-AI
+
+- כל שינוי שמוצע על ידי AI עובר code review אנושי לפני merge
+- אין להזין סודות, מפתחות או PII לפרומפטים או קבצי הקשר
+- פקודות אוטומטיות: ללא `sudo`, לא אינטראקטיביות, ורק בתיקיות tmp
+- תעד ב-PR החלטות אוטומציה: מקור ההצעה, שיקולים ובדיקות שבוצעו
+
+---
+
+## Telegram Bot – מניעת "message is not modified"
+
+> רלוונטי ל-`node-telegram-bot-api`
+
+כללים:
+- כשנערכת רק המקלדת: ניתן להשתמש ב-`editMessageReplyMarkup` עם אותו טיפול חריגים
+- תמיד קרא `bot.answerCallbackQuery(query.id)` לפני עריכה
+- עטוף `editMessageText`/`editMessageReplyMarkup` ב-wrapper שמתעלם מהשגיאה הזו בלבד
+- אל משתיקים שגיאות `BadRequest` אחרות
+
+דוגמה ב-Node.js:
+
+```javascript
+async function safeEditMessageText(bot, chatId, messageId, text, opts = {}) {
+  try {
+    await bot.editMessageText(text, { chat_id: chatId, message_id: messageId, ...opts });
+  } catch (err) {
+    const msg = String(err?.response?.body?.description || err?.message || '').toLowerCase();
+    if (msg.includes('message is not modified')) return;
+    throw err;
+  }
+}
+```
+
+---
+
+## Commit/PR
+
+- שמות ענפים: `fix/...`, `chore/...`, `feat/...`
+- Conventional Commits: `feat`/`fix`/`chore`/`docs`/`refactor`/`test`/`build`
+- תיאור PR קצר: What / Why / Validation (ידני/לוגים/צילומי מסך; טסטים אם קיימים), כולל צ'קליסט ו-Rollback
+- מלא PR לפי התבנית (אם קיימת)
+- לפני merge: תיאור ברור, תוכנית בדיקות, סיכוני Rollback, עדכון docs
+- UI: צרף צילום/וידאו תוצאות אם רלוונטי
+- אין `paths-ignore` על `.cursorrules` – שינוי בו מריץ CI (אם מוגדר)
+
+---
+
+## CI / Required Checks (Node)
+
+- Node 18+ (התאם ל-`engines`/סביבת ה-Deploy)
+- התקנה נקייה: `npm ci` (או `npm install` אם אין lock)
+- אין כיום בדיקות יחידה בריפו; אין לדרוש או לחסום PR על בסיס Unit Tests
+- Build/Lint: להריץ אם מוגדרים בפרויקט (למשל `npm run lint`)
+- עבודה רק על תיקיות זמניות; אין להריץ `git clean`/`reset` על ה-workspace
+- כאשר יתווספו טסטים בעתיד: להקפיד על הרצה מבודדת לתיקיות קבצים זמניות
+
+סטטוסים נדרשים ב-PR (להתאים ל-CI בפועל):
+- "Code Quality & Security" (למשל ESLint/אבטחה)
+- סטטוס Unit Tests אינו נדרש כרגע
+
+---
+
+## סודות ולוגים
+
+- אין לשמור סודות בקוד או בלוגים; להשתמש ב-ENV/Secret Manager
+- אל תרשום PII; בצע השחרה (redaction) לערכים רגישים בלוגים
+
+---
+
+## מעטפת Bash למחיקה בטוחה
+
+```bash
+set -euo pipefail
+IFS=$'\n\t'
+
+safe_rmrf() {
+  local target="${1:-}"
+  local allow_under="${2:-}"
+  [[ -z "$target" || -z "$allow_under" ]] && { echo "empty path"; exit 1; }
+
+  local rp_target rp_base
+  rp_target="$(readlink -f -- "$target")"
+  rp_base="$(readlink -f -- "$allow_under")"
+
+  [[ "$rp_target" == "/" || "$rp_target" == "$HOME" || "$rp_target" == "$PWD" ]] && {
+    echo "unsafe"; exit 1;
+  }
+
+  [[ "$rp_target" != "$rp_base"/* ]] && { echo "outside allowlist"; exit 1; }
+
+  rm -rf -- "$rp_target"
+}
+```
+
+---
+
+## Gists/קישורים חיצוניים בהנחיות משתמש
+
+- בכל פעם שהמשתמש מצרף Gist/קישור קוד: עיין בתוכן לפני מימוש
+- ישם בהתאם לרוח ההצעה; מותר לסטות מטעמי אבטחה/פשטות – אבל ציין זאת
+- אם יש פער או חוסר בהירות: הצע התאמה או שאל במידת הצורך
