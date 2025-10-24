@@ -1,4 +1,43 @@
 require('dotenv').config();
+const fs = require('fs');
+const path = require('path');
+
+// Ensure Puppeteer knows where Chrome lives on Render
+if (!process.env.PUPPETEER_EXECUTABLE_PATH) {
+  try {
+    const baseCacheDir = process.env.PUPPETEER_CACHE_DIR || '/opt/render/.cache/puppeteer';
+    const chromeRoot = path.join(baseCacheDir, 'chrome');
+    let discoveredExecutablePath = '';
+    if (fs.existsSync(chromeRoot)) {
+      const platformPrefixes = ['linux-', 'mac-', 'win-'];
+      const versions = fs
+        .readdirSync(chromeRoot)
+        .filter((entry) => platformPrefixes.some((p) => entry.startsWith(p)));
+      // Newest first by mtime
+      const versionEntriesSorted = versions
+        .map((entry) => ({
+          name: entry,
+          time: fs.statSync(path.join(chromeRoot, entry)).mtimeMs,
+        }))
+        .sort((a, b) => b.time - a.time);
+      for (const v of versionEntriesSorted) {
+        const candidate = path.join(chromeRoot, v.name, 'chrome-linux64', 'chrome');
+        if (fs.existsSync(candidate)) {
+          discoveredExecutablePath = candidate;
+          break;
+        }
+      }
+    }
+    if (discoveredExecutablePath) {
+      process.env.PUPPETEER_EXECUTABLE_PATH = discoveredExecutablePath;
+      // eslint-disable-next-line no-console
+      console.log(`[boot] Using Puppeteer Chrome at: ${discoveredExecutablePath}`);
+    }
+  } catch (e) {
+    // eslint-disable-next-line no-console
+    console.log('[boot] Failed to resolve Puppeteer executable path:', e && e.message);
+  }
+}
 const TelegramBot = require('node-telegram-bot-api');
 const express = require('express');
 const Database = require('./database/db');
