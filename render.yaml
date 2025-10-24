@@ -3,9 +3,11 @@ services:
     name: markdown-trainer-bot
     env: node
     plan: free
-    buildCommand: npm install --omit=dev && npx puppeteer browsers install chrome
+    buildCommand: npm install --omit=dev --no-audit --no-fund && npx puppeteer browsers install chrome
     startCommand: npm start
     envVars:
+      - key: NODE_VERSION
+        value: 18.20.4
       - key: NODE_ENV
         value: production
       - key: PORT
