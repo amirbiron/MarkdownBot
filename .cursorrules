@@ -127,7 +127,7 @@ async function safeEditMessageText(bot, chatId, messageId, text, opts = {}) {
 
 - שמות ענפים: `fix/...`, `chore/...`, `feat/...`
 - Conventional Commits: `feat`/`fix`/`chore`/`docs`/`refactor`/`test`/`build`
-- תיאור PR קצר: What / Why / Tests, כולל צ'קליסט ו-Rollback
+- תיאור PR קצר: What / Why / Validation (ידני/לוגים/צילומי מסך; טסטים אם קיימים), כולל צ'קליסט ו-Rollback
 - מלא PR לפי התבנית (אם קיימת)
 - לפני merge: תיאור ברור, תוכנית בדיקות, סיכוני Rollback, עדכון docs
 - UI: צרף צילום/וידאו תוצאות אם רלוונטי
@@ -139,13 +139,14 @@ async function safeEditMessageText(bot, chatId, messageId, text, opts = {}) {
 
 - Node 18+ (התאם ל-`engines`/סביבת ה-Deploy)
 - התקנה נקייה: `npm ci` (או `npm install` אם אין lock)
-- Build/Lint/Tests: להריץ אם מוגדרים בפרויקט (`npm run build|lint|test`)
+- אין כיום בדיקות יחידה בריפו; אין לדרוש או לחסום PR על בסיס Unit Tests
+- Build/Lint: להריץ אם מוגדרים בפרויקט (למשל `npm run lint`)
 - עבודה רק על תיקיות זמניות; אין להריץ `git clean`/`reset` על ה-workspace
-- טסטים שנוגעים לקבצים ירוצו בסביבה מבודדת לכל טסט
+- כאשר יתווספו טסטים בעתיד: להקפיד על הרצה מבודדת לתיקיות קבצים זמניות
 
-סטטוסים נדרשים ב-PR (לדוגמה, להתאים ל-CI בפועל):
-- "Code Quality & Security" (למשל ESLint/TS/אבטחה)
-- "Unit Tests" (אם קיימים)
+סטטוסים נדרשים ב-PR (להתאים ל-CI בפועל):
+- "Code Quality & Security" (למשל ESLint/אבטחה)
+- סטטוס Unit Tests אינו נדרש כרגע
 
 ---
 
