@@ -1,0 +1,32 @@
+{
+  "name": "markdown-trainer-bot",
+  "version": "1.0.0",
+  "description": "A Telegram bot for learning Markdown with interactive lessons and real-time sandbox rendering",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "keywords": [
+    "telegram",
+    "bot",
+    "markdown",
+    "learning",
+    "education"
+  ],
+  "author": "Amir Biron",
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^16.3.1",
+    "node-telegram-bot-api": "^0.64.0",
+    "marked": "^11.1.1",
+    "puppeteer": "^21.7.0",
+    "better-sqlite3": "^9.2.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
