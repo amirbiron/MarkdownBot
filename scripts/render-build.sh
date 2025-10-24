@@ -26,6 +26,24 @@ log "Node: $(node -v) | npm: $(npm -v) | Platform: $(uname -a)"
 log "Env: NODE_ENV=${NODE_ENV:-} NODE_VERSION=${NODE_VERSION:-}"
 log "Puppeteer env: SKIP=${PUPPETEER_SKIP_DOWNLOAD:-} PRODUCT=${PUPPETEER_PRODUCT:-} CACHE_DIR=${CACHE_DIR} TIMEOUT_MS=${DOWNLOAD_TIMEOUT_MS}"
 
+# Prefer Google Cloud Storage mirror to avoid dl.google.com blocks on Render
+export PUPPETEER_DOWNLOAD_HOST="${PUPPETEER_DOWNLOAD_HOST:-https://storage.googleapis.com}"
+export PUPPETEER_DOWNLOAD_BASE_URL="${PUPPETEER_DOWNLOAD_BASE_URL:-https://storage.googleapis.com}"
+log "PUPPETEER_DOWNLOAD_HOST=${PUPPETEER_DOWNLOAD_HOST} | PUPPETEER_DOWNLOAD_BASE_URL=${PUPPETEER_DOWNLOAD_BASE_URL}"
+
+# Quick network probe for mirrors (status + timing)
+probe_host() {
+  local url="$1"
+  if command -v curl >/dev/null 2>&1; then
+    log "Probing ${url}"
+    curl -I -L --max-time 10 -sS -w "HTTP %{http_code} | time_connect=%{time_connect}s | time_starttransfer=%{time_starttransfer}s | time_total=%{time_total}s\n" "$url" -o /dev/null || true
+  else
+    log "curl not available to probe ${url}"
+  fi
+}
+probe_host "https://dl.google.com"
+probe_host "https://storage.googleapis.com"
+
 log "[1/4] Preparing cache directory at ${CACHE_DIR}"
 mkdir -p -- "$CACHE_DIR"
 
@@ -56,37 +74,6 @@ log "Puppeteer version: ${PUPPETEER_VERSION}"
 NODE_VER=$(node -p "process.versions.node")
 log "Compatibility: Node ${NODE_VER} vs Puppeteer ${PUPPETEER_VERSION} (expect >=16.3 support)"
 
-log "[4/4] Installing Chrome via Puppeteer browsers CLI"
-# Prefer coreutils timeout if available to avoid indefinite hangs
-if command -v timeout >/dev/null 2>&1; then
-  TIMEOUT_PREFIX=(timeout 600s)
-else
-  TIMEOUT_PREFIX=()
-fi
-
-export PUPPETEER_CACHE_DIR="$CACHE_DIR"
-export PUPPETEER_PRODUCT="chrome"
-export PUPPETEER_DOWNLOAD_HOST="${PUPPETEER_DOWNLOAD_HOST:-}"
-export PUPPETEER_DOWNLOAD_TIMEOUT="$DOWNLOAD_TIMEOUT_MS"
-
-log "$ npx puppeteer browsers install chrome"
-set +e
-"${TIMEOUT_PREFIX[@]}" npx puppeteer browsers install chrome
-RC=$?
-set -e
-if [[ $RC -ne 0 ]]; then
-  log "⚠️ puppeteer browsers install chrome exited with code $RC"
-  log "Attempting retry with verbose logging"
-  set +e
-  "${TIMEOUT_PREFIX[@]}" npx puppeteer browsers install chrome --verbose
-  RC=$?
-  set -e
-  if [[ $RC -ne 0 ]]; then
-    log "❌ Failed to install Chrome via Puppeteer CLI (rc=$RC)"
-    log "Consider downgrading Puppeteer to ^21.0.0 or checking network access"
-    exit $RC
-  fi
-fi
-log "✅ Chrome installed into cache"
-
+log "[4/4] Skipping Chrome download during build (moved to start phase)"
+log "Reason: avoid build hangs; start script will install with verbose logs"
 log "==> Build finished successfully"
