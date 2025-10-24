@@ -3,11 +3,11 @@ services:
     name: markdown-trainer-bot
     env: node
     plan: free
-    buildCommand: npm install --omit=dev --no-audit --no-fund && npx puppeteer browsers install chrome
-    startCommand: npm start
+    buildCommand: bash scripts/render-build.sh
+    startCommand: bash scripts/render-start.sh
     envVars:
       - key: NODE_VERSION
-        value: 20.17.0
+        value: 20.19.5
       - key: NODE_ENV
         value: production
       - key: DATABASE_PATH
@@ -20,6 +20,8 @@ services:
         value: chrome
       - key: PUPPETEER_CACHE_DIR
         value: /opt/render/.cache/puppeteer
+      - key: PUPPETEER_DOWNLOAD_TIMEOUT
+        value: 600000
       - key: TELEGRAM_BOT_TOKEN
         sync: false
     healthCheckPath: /health
