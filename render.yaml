@@ -1,5 +1,5 @@
 services:
-  - type: web
+  - type: worker
     name: markdown-trainer-bot
     env: node
     plan: free
@@ -24,4 +24,3 @@ services:
         value: 600000
       - key: TELEGRAM_BOT_TOKEN
         sync: false
-    healthCheckPath: /health
