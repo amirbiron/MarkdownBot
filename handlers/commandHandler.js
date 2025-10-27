@@ -92,10 +92,12 @@ class CommandHandler {
       `/progress - הצג את ההתקדמות שלך\n\n` +
       `🛠️ *כלים:*\n` +
       `/sandbox - פתח מעבדת תרגול (Markdown → תמונה)\n` +
+      `/templates - תבניות Markdown מוכנות לשימוש\n` +
       `/cheatsheet - הצג מדריך מהיר\n` +
       `/exit - צא ממצב מעבדה\n\n` +
       `💡 *טיפים:*\n` +
       `• השתמש במעבדה (/sandbox) כדי לראות איך הקוד שלך נראה\n` +
+      `• השתמש בתבניות (/templates) לקבלת נקודת פתיחה מקצועית\n` +
       `• תרגל כל יום כדי לשפר את הכישורים שלך\n` +
       `• אם תקעת, תמיד אפשר לחזור על שיעורים קודמים\n\n` +
       `שאלות? צור קשר עם היוצר: @amirbiron`;
@@ -190,6 +192,52 @@ class CommandHandler {
             [
               { text: '✅ משימות', callback_data: 'cheat_tasks' },
               { text: '➖ קווים', callback_data: 'cheat_lines' }
+            ]
+          ]
+        }
+      }
+    );
+  }
+
+  // ========================================
+  // /templates - Show markdown templates library
+  // ========================================
+  async handleTemplates(msg) {
+    const chatId = msg.chat.id;
+    const userId = msg.from.id;
+
+    this.db.updateLastActive(userId);
+
+    await this.bot.sendMessage(chatId,
+      `📚 *ספריית תבניות Markdown*\n\n` +
+      `בחר תבנית מוכנה לשימוש:`,
+      {
+        parse_mode: 'Markdown',
+        reply_markup: {
+          inline_keyboard: [
+            [
+              { text: '📋 PRD - מסמך דרישות', callback_data: 'template_prd' }
+            ],
+            [
+              { text: '📖 README - תיעוד פרויקט', callback_data: 'template_readme' }
+            ],
+            [
+              { text: '🔍 Post Mortem - ניתוח תקלה', callback_data: 'template_postmortem' }
+            ],
+            [
+              { text: '✍️ Blog Post - מאמר טכני', callback_data: 'template_blog' }
+            ],
+            [
+              { text: '📝 Meeting Notes - פרוטוקול', callback_data: 'template_meeting' }
+            ],
+            [
+              { text: '📄 One-Pager - מצגת רעיון', callback_data: 'template_onepager' }
+            ],
+            [
+              { text: '🔌 API Reference - תיעוד API', callback_data: 'template_api' }
+            ],
+            [
+              { text: '✅ QA Test Plan - תוכנית בדיקות', callback_data: 'template_test-plan' }
             ]
           ]
         }

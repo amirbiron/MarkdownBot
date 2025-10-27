@@ -102,6 +102,11 @@ if (bot && commandHandler && messageHandler) {
     commandHandler.handleCheatsheet(msg);
   });
 
+  // Handle /templates command
+  bot.onText(/\/templates/, (msg) => {
+    commandHandler.handleTemplates(msg);
+  });
+
   // Handle /progress command (show user progress)
   bot.onText(/\/progress/, (msg) => {
     commandHandler.handleProgress(msg);
