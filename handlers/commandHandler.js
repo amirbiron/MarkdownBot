@@ -24,9 +24,9 @@ class CommandHandler {
     if (!user) {
       // New user - create record
       this.db.createUser(userId, username, firstName, lastName, languageCode);
-
+      
       // Send welcome message for new users
-      await this.sendWelcomeSequence(chatId, userId, firstName);
+      await this.sendWelcomeSequence(chatId, firstName);
     } else {
       // Existing user - send welcome back message
       const progress = this.db.getUserProgress(userId);
@@ -48,29 +48,31 @@ class CommandHandler {
     }
   }
 
-  async sendWelcomeSequence(chatId, userId, firstName) {
+  async sendWelcomeSequence(chatId, firstName) {
     // Message 1: Welcome
     await this.bot.sendMessage(chatId,
       `היי ${firstName}, ברוכ/ה הבא/ה ל-Markdown Trainer! 🤖\n\n` +
       `אני הבוט שילמד אותך צעד אחר צעד איך לכתוב טקסטים יפים, מסודרים ומקצועיים באמצעות Markdown.\n\n` +
       `מה זה Markdown?\n` +
       `זו שפת סימון פשוטה שמאפשרת לך לעצב טקסט (כמו כותרות, רשימות והדגשות) באמצעות תווים פשוטים, בלי להסתבך עם תפריטים ועכבר.\n\n` +
-      `בוא נתחיל מהשיעור הראשון! 🚀`
+      `כל יום אשלח לך טיפ קצר או אתגר קטן. מוכנ/ה להתחיל?`
     );
 
     await this.sleep(2000);
 
-    // Set default learning pace
-    this.db.updateLearningPace(userId, 'normal');
-
-    // Load and send first lesson
-    const LessonsData = require('../lessons/lessonsData');
-    const firstLesson = LessonsData.getLesson(1);
-
-    if (firstLesson) {
-      this.db.updateCurrentLesson(userId, 1);
-      await this.sendLesson(chatId, userId, firstLesson);
-    }
+    // Message 2: Learning pace selection
+    await this.bot.sendMessage(chatId,
+      `👋 לפני שנתחיל, איך אתה רוצה ללמוד?`,
+      {
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: '🐌 קצב רגוע (שיעור אחד ביום)', callback_data: 'pace_slow' }],
+            [{ text: '🚶 קצב רגיל (2-3 ביום)', callback_data: 'pace_normal' }],
+            [{ text: '🏃 קצב מהיר (כמה שרוצה)', callback_data: 'pace_fast' }]
+          ]
+        }
+      }
+    );
   }
 
   // ========================================
@@ -226,7 +228,16 @@ class CommandHandler {
               { text: '🔍 Post Mortem - ניתוח תקלה', callback_data: 'template_postmortem' }
             ],
             [
+              { text: '✍️ Blog Post - מאמר טכני', callback_data: 'template_blog' }
+            ],
+            [
               { text: '📝 Meeting Notes - פרוטוקול', callback_data: 'template_meeting' }
+            ],
+            [
+              { text: '📄 One-Pager - מצגת רעיון', callback_data: 'template_onepager' }
+            ],
+            [
+              { text: '🔌 API Reference - תיעוד API', callback_data: 'template_api' }
             ],
             [
               { text: '✅ QA Test Plan - תוכנית בדיקות', callback_data: 'template_test-plan' }

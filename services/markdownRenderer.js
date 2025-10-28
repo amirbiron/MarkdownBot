@@ -6,15 +6,11 @@ const fs = require('fs');
 class MarkdownRenderer {
   constructor() {
     this.browser = null;
-
-    // Use persistent data directory for output files (Render compatible)
-    const dataDir = process.env.DATA_DIR || path.join(process.cwd(), 'data');
-    this.outputDir = path.join(dataDir, 'output');
-
+    this.outputDir = path.join(__dirname, '../output');
+    
     // Create output directory if it doesn't exist
     if (!fs.existsSync(this.outputDir)) {
       fs.mkdirSync(this.outputDir, { recursive: true });
-      console.log(`📁 Created output directory: ${this.outputDir}`);
     }
 
     // Configure marked options

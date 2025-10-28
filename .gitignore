@@ -8,9 +8,6 @@ node_modules/
 database/*.db
 database/*.db-journal
 
-# Data directory (persistent data for Render)
-data/
-
 # Output files (generated images)
 output/
 *.png
