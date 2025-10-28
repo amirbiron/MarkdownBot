@@ -5,13 +5,17 @@ services:
     plan: free
     buildCommand: bash scripts/render-build.sh
     startCommand: bash scripts/render-start.sh
+    disk:
+      name: data
+      mountPath: /data
+      sizeGB: 1
     envVars:
       - key: NODE_VERSION
         value: 20.19.5
       - key: NODE_ENV
         value: production
       - key: DATABASE_PATH
-        value: ./database/users.db
+        value: /data/users.db
       - key: SANDBOX_ENABLED
         value: true
       - key: PUPPETEER_SKIP_DOWNLOAD
