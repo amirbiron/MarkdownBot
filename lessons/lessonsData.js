@@ -567,46 +567,10 @@ const lessons = [
   },
 
   // ========================================
-  // LESSON 14: Emojis & Icons (אימוג'ים ואייקונים)
+  // LESSON 14: Alt Text for Images (טקסט חלופי)
   // ========================================
   {
     id: 14,
-    title: 'אימוג\'ים ואייקונים',
-    topic: 'emojis',
-    category: 'aesthetics',
-    points: 10,
-    messages: [
-      `היום נדבר על *אימוג'ים ואייקונים*! 🎨\n\n` +
-      `שימוש נכון באימוג'ים יכול:\n` +
-      `✅ להוסיף עניין ויזואלי\n` +
-      `✅ לשפר הבנה של הקשר\n` +
-      `✅ לחלק מידע לקטגוריות\n\n` +
-      `*איפה להשתמש באימוג'ים?*\n\n` +
-      `🔹 *בכותרות* - להוסיף הקשר:\n` +
-      `\`## 📚 ספרייה\`\n\n` +
-      `🔹 *ברשימות* - להבליט פריטים:\n` +
-      `\`- ✅ הושלם\`\n` +
-      `\`- ❌ לא הושלם\`\n\n` +
-      `🔹 *בטבלאות* - לציין סטטוס:\n` +
-      `\`| משימה | סטטוס |\`\n` +
-      `\`| כתיבה | ✅ |\``,
-
-      `💡 *טיפים:*\n\n` +
-      `• אל תגזים - 1-2 אימוג'ים בכותרת זה מספיק\n` +
-      `• השתמש באימוג'ים עקביים (✅ תמיד ל"הושלם")\n` +
-      `• בחר אימוג'ים רלוונטיים לתוכן\n\n` +
-      `*אימוג'ים נפוצים:*\n` +
-      `✅ ❌ ⚠️ 💡 🚀 📌 📝 🎯 🔥 ⭐\n\n` +
-      `זכור: פחות זה יותר! 🎨`
-    ],
-    quiz: null
-  },
-
-  // ========================================
-  // LESSON 15: Alt Text for Images (טקסט חלופי)
-  // ========================================
-  {
-    id: 15,
     title: 'כתיבת Alt Text משמעותי',
     topic: 'accessibility',
     category: 'aesthetics',
@@ -649,7 +613,7 @@ const lessons = [
   // TIP 1: HTML Integration
   // ========================================
   {
-    id: 16,
+    id: 15,
     title: 'שילוב HTML לעיצוב מיוחד',
     topic: 'html-integration',
     category: 'tips',
@@ -668,8 +632,7 @@ const lessons = [
       `  <h3>כותרת ממורכזת</h3>\n` +
       `</div>\n` +
       `\`\`\`\n\n` +
-      `זה מאפשר לך שליטה מלאה על המראה! נסה את זה במעבדה עם /sandbox.\n\n` +
-      `מוכן/ה לטיפ הבא? שלח /next! 🚀`
+      `זה מאפשר לך שליטה מלאה על המראה! נסה את זה במעבדה עם /sandbox.`
     ],
     quiz: null
   },
@@ -678,7 +641,7 @@ const lessons = [
   // TIP 2: Keyboard Buttons
   // ========================================
   {
-    id: 17,
+    id: 16,
     title: 'כפתורים יפים',
     topic: 'keyboard-buttons',
     category: 'tips',
@@ -691,7 +654,6 @@ const lessons = [
       `*התוצאה:*\n` +
       `לחץ על <kbd>Ctrl</kbd> + <kbd>C</kbd> להעתקה\n\n` +
       `זה נהדר לתיעוד תוכנה או מדריכים!\n\n` +
-      `מוכן/ה לטיפ הבא? שלח /next! 🚀`
     ],
     quiz: null
   },
@@ -700,7 +662,7 @@ const lessons = [
   // TIP 3: Details/Summary (Accordion)
   // ========================================
   {
-    id: 18,
+    id: 17,
     title: 'אקורדיון (Details/Summary)',
     topic: 'accordion',
     category: 'tips',
@@ -716,7 +678,6 @@ const lessons = [
       `</details>\n` +
       `\`\`\`\n\n` +
       `מושלם להסתרת מידע נוסף או FAQ! 📦\n\n` +
-      `מוכן/ה לטיפ הבא? שלח /next! 🚀`
     ],
     quiz: null
   },
@@ -725,7 +686,7 @@ const lessons = [
   // TIP 4: Tables with colspan
   // ========================================
   {
-    id: 19,
+    id: 18,
     title: 'טבלאות עם colspan',
     topic: 'tables-colspan',
     category: 'tips',
@@ -746,7 +707,6 @@ const lessons = [
       `</table>\n` +
       `\`\`\`\n\n` +
       `שימושי לטבלאות מורכבות! 📊\n\n` +
-      `מוכן/ה לטיפ הבא? שלח /next! 🚀`
     ],
     quiz: null
   },
@@ -755,7 +715,7 @@ const lessons = [
   // TIP 5: Diff Blocks
   // ========================================
   {
-    id: 20,
+    id: 19,
     title: 'Diff blocks',
     topic: 'diff-blocks',
     category: 'tips',
@@ -770,7 +730,6 @@ const lessons = [
       `  שורה שלא השתנתה\n` +
       `\`\`\`\n\n` +
       `מושלם להדגמת שינויים בקוד! 🔄\n\n` +
-      `מוכן/ה לטיפ הבא? שלח /next! 🚀`
     ],
     quiz: null
   },
@@ -779,7 +738,7 @@ const lessons = [
   // TIP 6: GitHub Alerts
   // ========================================
   {
-    id: 21,
+    id: 20,
     title: 'Alerts של GitHub',
     topic: 'github-alerts',
     category: 'tips',
@@ -795,7 +754,6 @@ const lessons = [
       `> שים לב לזה!\n` +
       `\`\`\`\n\n` +
       `עובד ב-GitHub, GitLab ופלטפורמות נוספות! ⚠️\n\n` +
-      `מוכן/ה לטיפ הבא? שלח /next! 🚀`
     ],
     quiz: null
   },
@@ -804,7 +762,7 @@ const lessons = [
   // TIP 7: Badge Shields
   // ========================================
   {
-    id: 22,
+    id: 21,
     title: 'Badge Shields',
     topic: 'badge-shields',
     category: 'tips',
@@ -816,7 +774,6 @@ const lessons = [
       `\`![Build](https://img.shields.io/badge/build-passing-brightgreen)\`\n\n` +
       `מוסיף מראה מקצועי לפרויקטים! 🏷️\n\n` +
       `בדוק את https://shields.io לעוד אפשרויות.\n\n` +
-      `מוכן/ה לטיפ הבא? שלח /next! 🚀`
     ],
     quiz: null
   },
@@ -825,7 +782,7 @@ const lessons = [
   // TIP 8: Images with Links
   // ========================================
   {
-    id: 23,
+    id: 22,
     title: 'תמונות עם קישור',
     topic: 'image-links',
     category: 'tips',
@@ -837,7 +794,6 @@ const lessons = [
       `\`[![תמונה](thumb.jpg)](https://youtube.com/watch?v=...)\`\n\n` +
       `לחיצה על התמונה תוביל לקישור! 🎬\n\n` +
       `נהדר לתצוגות מקדימות של וידאו.\n\n` +
-      `מוכן/ה לטיפ הבא? שלח /next! 🚀`
     ],
     quiz: null
   },
@@ -846,7 +802,7 @@ const lessons = [
   // TIP 9: Image Alignment
   // ========================================
   {
-    id: 24,
+    id: 23,
     title: 'יישור תמונות',
     topic: 'image-alignment',
     category: 'tips',
@@ -859,7 +815,6 @@ const lessons = [
       `<img src="logo.png" align="right" width="100">\n` +
       `\`\`\`\n\n` +
       `שליטה מלאה על מיקום התמונה! 🖼️\n\n` +
-      `מוכן/ה לטיפ הבא? שלח /next! 🚀`
     ],
     quiz: null
   },
@@ -868,7 +823,7 @@ const lessons = [
   // TIP 10: Semantic Concepts
   // ========================================
   {
-    id: 25,
+    id: 24,
     title: 'קונספים סמנטיים',
     topic: 'semantic-concepts',
     category: 'tips',
@@ -882,7 +837,6 @@ const lessons = [
       `> ⚠️ **אזהרה:** שים לב לכך!\n` +
       `\`\`\`\n\n` +
       `עוזר לקורא לזהות מידע חשוב במהירות! 📌\n\n` +
-      `מוכן/ה לטיפ הבא? שלח /next! 🚀`
     ],
     quiz: null
   },
@@ -891,7 +845,7 @@ const lessons = [
   // TIP 11: Checkbox Lists
   // ========================================
   {
-    id: 26,
+    id: 25,
     title: 'רשימות עם checkbox',
     topic: 'checkbox-lists',
     category: 'tips',
@@ -907,7 +861,6 @@ const lessons = [
       `\`\`\`\n\n` +
       `מצוין לרשימות TODO! ✅\n\n` +
       `כבר למדנו את זה, אבל כדאי לזכור! 😊\n\n` +
-      `מוכן/ה לטיפ הבא? שלח /next! 🚀`
     ],
     quiz: null
   },
@@ -916,7 +869,7 @@ const lessons = [
   // TIP 12: Advanced Tables
   // ========================================
   {
-    id: 27,
+    id: 26,
     title: 'טבלאות מתקדמות',
     topic: 'advanced-tables',
     category: 'tips',
@@ -932,7 +885,6 @@ const lessons = [
       `| \`API v2\` | ⚠️ | [beta](#) |\n` +
       `\`\`\`\n\n` +
       `טבלאות עשירות ומקצועיות! 📊\n\n` +
-      `מוכן/ה לטיפ הבא? שלח /next! 🚀`
     ],
     quiz: null
   },
@@ -941,7 +893,7 @@ const lessons = [
   // TIP 13: Comments
   // ========================================
   {
-    id: 28,
+    id: 27,
     title: 'Comments (הערות נסתרות)',
     topic: 'comments',
     category: 'tips',
@@ -955,7 +907,6 @@ const lessons = [
       `[//]: # (זו גם הערה נסתרת)\n` +
       `\`\`\`\n\n` +
       `שימושי להערות למחבר או TODO! 📝\n\n` +
-      `מוכן/ה לטיפ הבא? שלח /next! 🚀`
     ],
     quiz: null
   },
@@ -964,7 +915,7 @@ const lessons = [
   // TIP 14: Custom Anchors
   // ========================================
   {
-    id: 29,
+    id: 28,
     title: 'Anchors מותאמים אישית',
     topic: 'custom-anchors',
     category: 'tips',
@@ -979,7 +930,6 @@ const lessons = [
       `[קפוץ לסעיף ראשון](#section-1)\n` +
       `\`\`\`\n\n` +
       `מצוין לניווט במסמכים ארוכים! ⚓\n\n` +
-      `מוכן/ה לטיפ הבא? שלח /next! 🚀`
     ],
     quiz: null
   },
@@ -988,7 +938,7 @@ const lessons = [
   // TIP 15: Progress Bars
   // ========================================
   {
-    id: 30,
+    id: 29,
     title: 'Progress Bars',
     topic: 'progress-bars',
     category: 'tips',
@@ -1005,7 +955,6 @@ const lessons = [
       `<progress value="75" max="100">75%</progress>\n` +
       `\`\`\`\n\n` +
       `ויזואלי ואפקטיבי! 📈\n\n` +
-      `מוכן/ה לטיפ הבא? שלח /next! 🚀`
     ],
     quiz: null
   },
@@ -1014,7 +963,7 @@ const lessons = [
   // TIP 16: Collapsible Sections Advanced
   // ========================================
   {
-    id: 31,
+    id: 30,
     title: 'Collapsible Sections מתקדמות',
     topic: 'collapsible-advanced',
     category: 'tips',
@@ -1034,7 +983,6 @@ const lessons = [
       `</details>\n` +
       `\`\`\`\n\n` +
       `אקורדיונים עם תוכן מלא! 📦\n\n` +
-      `מוכן/ה לטיפ הבא? שלח /next! 🚀`
     ],
     quiz: null
   },
@@ -1043,7 +991,7 @@ const lessons = [
   // TIP 17: Mermaid Diagrams
   // ========================================
   {
-    id: 32,
+    id: 31,
     title: 'Mermaid - דיאגרמות מורכבות',
     topic: 'mermaid-advanced',
     category: 'tips',
@@ -1059,7 +1007,6 @@ const lessons = [
       `\`\`\`\n\n` +
       `תרשימי רצף, גאנט ועוד! 📊\n\n` +
       `נסה ב-/sandbox או ב-GitHub.\n\n` +
-      `מוכן/ה לטיפ הבא? שלח /next! 🚀`
     ],
     quiz: null
   },
@@ -1068,7 +1015,7 @@ const lessons = [
   // TIP 18: Math Equations
   // ========================================
   {
-    id: 33,
+    id: 32,
     title: 'Math Equations',
     topic: 'math-equations',
     category: 'tips',
@@ -1082,7 +1029,6 @@ const lessons = [
       `$a^2 + b^2 = c^2$\n` +
       `\`\`\`\n\n` +
       `עובד ב-GitHub, Jupyter ועוד! 🧮\n\n` +
-      `מוכן/ה לטיפ הבא? שלח /next! 🚀`
     ],
     quiz: null
   },
@@ -1091,7 +1037,7 @@ const lessons = [
   // TIP 19: Definition Lists
   // ========================================
   {
-    id: 34,
+    id: 33,
     title: 'Definition Lists',
     topic: 'definition-lists',
     category: 'tips',
@@ -1109,7 +1055,6 @@ const lessons = [
       `</dl>\n` +
       `\`\`\`\n\n` +
       `מצוין למונחונים! 📖\n\n` +
-      `מוכן/ה לטיפ הבא? שלח /next! 🚀`
     ],
     quiz: null
   },
@@ -1118,7 +1063,7 @@ const lessons = [
   // TIP 20: Auto-linking
   // ========================================
   {
-    id: 35,
+    id: 34,
     title: 'Auto-linking מתקדם',
     topic: 'auto-linking',
     category: 'tips',
@@ -1134,7 +1079,6 @@ const lessons = [
       `@username ← מזכיר משתמש\n` +
       `\`\`\`\n\n` +
       `חוסך זמן! 🔗\n\n` +
-      `מוכן/ה לטיפ הבא? שלח /next! 🚀`
     ],
     quiz: null
   },
@@ -1143,7 +1087,7 @@ const lessons = [
   // TIP 21: Syntax Highlighting
   // ========================================
   {
-    id: 36,
+    id: 35,
     title: 'Syntax Highlighting מורכב',
     topic: 'syntax-highlighting',
     category: 'tips',
@@ -1160,7 +1104,6 @@ const lessons = [
       `    return True\n` +
       `\`\`\`\n\n` +
       `תלוי בפלטפורמה, אבל GitHub תומך! 🎨\n\n` +
-      `מוכן/ה לטיפ הבא? שלח /next! 🚀`
     ],
     quiz: null
   },
@@ -1169,7 +1112,7 @@ const lessons = [
   // TIP 22: Color Swatches
   // ========================================
   {
-    id: 37,
+    id: 36,
     title: 'Color Swatches',
     topic: 'color-swatches',
     category: 'tips',
@@ -1184,7 +1127,6 @@ const lessons = [
       `\\\`hsl(212, 92%, 45%)\\\` - שוב אותו כחול\n` +
       `\`\`\`\n\n` +
       `GitHub מזהה אוטומטית ומציג דוגמה! 🎨\n\n` +
-      `מוכן/ה לטיפ הבא? שלח /next! 🚀`
     ],
     quiz: null
   },
@@ -1193,7 +1135,7 @@ const lessons = [
   // TIP 23: Subscript & Superscript
   // ========================================
   {
-    id: 38,
+    id: 37,
     title: 'Subscript & Superscript',
     topic: 'sub-super-script',
     category: 'tips',
@@ -1205,7 +1147,6 @@ const lessons = [
       `\`H<sub>2</sub>O\` → H₂O\n` +
       `\`E = mc<sup>2</sup>\` → E = mc²\n\n` +
       `מושלם למדע ומתמטיקה! 🔬\n\n` +
-      `מוכן/ה לטיפ הבא? שלח /next! 🚀`
     ],
     quiz: null
   },
@@ -1214,7 +1155,7 @@ const lessons = [
   // TIP 24: ASCII Art & Diagrams
   // ========================================
   {
-    id: 39,
+    id: 38,
     title: 'ASCII Art & Diagrams',
     topic: 'ascii-art',
     category: 'tips',
@@ -1242,7 +1183,7 @@ const lessons = [
   // TIP 25: Video Embedding (LAST TIP)
   // ========================================
   {
-    id: 40,
+    id: 39,
     title: 'Video Embedding',
     topic: 'video-embedding',
     category: 'tips',
