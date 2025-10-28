@@ -77,9 +77,23 @@ class DatabaseManager {
         wrong_answers INTEGER DEFAULT 0,
         last_lesson_date DATETIME,
         learning_pace TEXT DEFAULT 'normal',
+        sandbox_theme TEXT DEFAULT 'github-light',
         FOREIGN KEY (user_id) REFERENCES users(user_id)
       )
     `);
+
+    // Add sandbox_theme column if it doesn't exist (migration for existing databases)
+    try {
+      this.db.exec(`
+        ALTER TABLE user_progress ADD COLUMN sandbox_theme TEXT DEFAULT 'github-light'
+      `);
+      console.log('✅ Added sandbox_theme column to user_progress table');
+    } catch (error) {
+      // Column already exists, ignore the error
+      if (!error.message.includes('duplicate column')) {
+        console.warn('⚠️ Migration warning:', error.message);
+      }
+    }
 
     // Lesson history - tracks each lesson completion
     this.db.exec(`
@@ -450,6 +464,27 @@ class DatabaseManager {
       GROUP BY topic
     `);
     return stmt.all(userId);
+  }
+
+  // ========================================
+  // Sandbox Theme Management
+  // ========================================
+
+  getSandboxTheme(userId) {
+    const stmt = this.db.prepare(`
+      SELECT sandbox_theme FROM user_progress WHERE user_id = ?
+    `);
+    const result = stmt.get(userId);
+    return result ? result.sandbox_theme : 'github-light';
+  }
+
+  setSandboxTheme(userId, theme) {
+    const stmt = this.db.prepare(`
+      UPDATE user_progress
+      SET sandbox_theme = ?
+      WHERE user_id = ?
+    `);
+    stmt.run(theme, userId);
   }
 
   // ========================================

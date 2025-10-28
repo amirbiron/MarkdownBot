@@ -97,6 +97,11 @@ if (bot && commandHandler && messageHandler) {
     commandHandler.handleExit(msg);
   });
 
+  // Handle /themes command (select sandbox theme)
+  bot.onText(/\/themes/, (msg) => {
+    commandHandler.handleThemes(msg);
+  });
+
   // Handle /cheatsheet command
   bot.onText(/\/cheatsheet/, (msg) => {
     commandHandler.handleCheatsheet(msg);

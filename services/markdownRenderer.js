@@ -60,7 +60,7 @@ class MarkdownRenderer {
   // ========================================
   // Render Markdown to Image
   // ========================================
-  async renderMarkdown(markdownText, userId) {
+  async renderMarkdown(markdownText, userId, theme = 'github-light') {
     try {
       // Initialize browser
       await this.initBrowser();
@@ -69,7 +69,7 @@ class MarkdownRenderer {
       const html = marked.parse(markdownText);
 
       // Create full HTML document with styling
-      const fullHtml = this.createStyledHtml(html);
+      const fullHtml = this.createStyledHtml(html, theme);
 
       // Create new page
       const page = await this.browser.newPage();
@@ -126,7 +126,26 @@ class MarkdownRenderer {
   // ========================================
   // Create Styled HTML
   // ========================================
-  createStyledHtml(htmlContent) {
+  createStyledHtml(htmlContent, theme = 'github-light') {
+    // Load theme CSS
+    const themePath = path.join(__dirname, '../themes', `${theme}.css`);
+    let themeCSS = '';
+
+    try {
+      if (fs.existsSync(themePath)) {
+        themeCSS = fs.readFileSync(themePath, 'utf-8');
+      } else {
+        // Fallback to github-light if theme not found
+        console.warn(`Theme ${theme} not found, falling back to github-light`);
+        const fallbackPath = path.join(__dirname, '../themes', 'github-light.css');
+        themeCSS = fs.readFileSync(fallbackPath, 'utf-8');
+      }
+    } catch (error) {
+      console.error('Error loading theme CSS:', error);
+      // Use inline default styles as last resort
+      themeCSS = this.getDefaultStyles();
+    }
+
     return `
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
@@ -140,6 +159,23 @@ class MarkdownRenderer {
       box-sizing: border-box;
     }
 
+    ${themeCSS}
+  </style>
+</head>
+<body>
+  <div class="markdown-body">
+    ${htmlContent}
+  </div>
+</body>
+</html>
+    `;
+  }
+
+  // ========================================
+  // Get Default Styles (Fallback)
+  // ========================================
+  getDefaultStyles() {
+    return `
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Helvetica Neue', sans-serif;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -419,14 +455,6 @@ class MarkdownRenderer {
       transform: scale(1.02);
       box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
     }
-  </style>
-</head>
-<body>
-  <div class="markdown-body">
-    ${htmlContent}
-  </div>
-</body>
-</html>
     `;
   }
 
