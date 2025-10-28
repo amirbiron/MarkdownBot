@@ -39,7 +39,9 @@ class ShareImageGenerator {
           '--disable-accelerated-2d-canvas',
           '--no-first-run',
           '--no-zygote',
-          '--disable-gpu'
+          '--disable-gpu',
+          '--font-render-hinting=none',
+          '--disable-font-subpixel-positioning'
         ]
       });
 
@@ -111,7 +113,7 @@ class ShareImageGenerator {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;900&family=Noto+Emoji:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
     * {
       margin: 0;
@@ -120,7 +122,7 @@ class ShareImageGenerator {
     }
 
     body {
-      font-family: 'Heebo', 'Arial Hebrew', 'Arial', 'Tahoma', sans-serif;
+      font-family: 'Heebo', 'Arial Hebrew', 'Noto Emoji', 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif;
       width: 1200px;
       height: 630px;
       background: ${bgGradient};
@@ -189,6 +191,7 @@ class ShareImageGenerator {
 
     .logo-icon {
       font-size: 48px;
+      font-family: 'Noto Emoji', 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif;
     }
 
     .tagline {
@@ -223,6 +226,7 @@ class ShareImageGenerator {
       margin-bottom: 25px;
       animation: bounce 2s ease-in-out infinite;
       filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
+      font-family: 'Noto Emoji', 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif;
     }
 
     @keyframes bounce {
@@ -264,6 +268,7 @@ class ShareImageGenerator {
     .stat-icon {
       font-size: 28px;
       margin-bottom: 8px;
+      font-family: 'Noto Emoji', 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif;
     }
 
     .stat-value {
