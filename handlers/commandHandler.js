@@ -65,7 +65,7 @@ class CommandHandler {
 
     this.db.updateLastActive(userId);
 
-    const helpText =
+    let helpText =
       `📚 *עזרה - Markdown Trainer Bot*\n\n` +
       `*פקודות זמינות:*\n\n` +
       `🎓 *למידה:*\n` +
@@ -85,8 +85,13 @@ class CommandHandler {
       `• השתמש באימון ממוקד (/train) לתרגל נושאים ספציפיים\n` +
       `• השתמש במעבדה (/sandbox) כדי לראות איך הקוד שלך נראה\n` +
       `• השתמש בתבניות (/templates) לקבלת נקודת פתיחה מקצועית\n` +
-      `• תרגל כל יום כדי לשפר את הכישורים שלך\n\n` +
-      `שאלות? צור קשר עם היוצר: @moominAmir`;
+      `• תרגל כל יום כדי לשפר את הכישורים שלך`;
+
+    if (this.isAdmin(userId)) {
+      helpText += `\n\n🧰 *אדמין:*\n/reset_progress - אפס התקדמות (כדי לאפס משתמש אחר, שלח כ-reply)`;
+    }
+
+    helpText += `\n\nשאלות? צור קשר עם היוצר: @moominAmir`;
 
     try {
       await this.bot.sendMessage(chatId, helpText, { parse_mode: 'Markdown' });
@@ -95,6 +100,46 @@ class CommandHandler {
       // Try without markdown parsing if it fails
       await this.bot.sendMessage(chatId, helpText.replace(/\*/g, ''));
     }
+  }
+
+  // ========================================
+  // /reset_progress - Admin only: reset a user's progress
+  // ========================================
+  async handleResetProgress(msg) {
+    const chatId = msg.chat.id;
+    const fromUserId = msg.from.id;
+
+    if (!this.isAdmin(fromUserId)) {
+      await this.bot.sendMessage(chatId, '⛔ פקודה זו זמינה רק לאדמין.');
+      return;
+    }
+
+    // If used as reply, target is the replied user's id; otherwise self
+    const replyTo = msg.reply_to_message;
+    const targetUserId = replyTo?.from?.id || fromUserId;
+
+    const user = this.db.getUser(targetUserId);
+    if (!user) {
+      await this.bot.sendMessage(chatId, '❌ משתמש לא נמצא במסד הנתונים.');
+      return;
+    }
+
+    try {
+      this.db.resetUserProgress(targetUserId);
+      await this.bot.sendMessage(chatId, `✅ ההתקדמות אופסה עבור משתמש ${targetUserId}.\nאפשר להתחיל מחדש עם /next`);
+    } catch (e) {
+      console.error('Error resetting progress:', e);
+      await this.bot.sendMessage(chatId, '❌ שגיאה באיפוס ההתקדמות.');
+    }
+  }
+
+  // Check admin by env var list (comma-separated IDs)
+  isAdmin(userId) {
+    const admins = (process.env.ADMIN_USER_IDS || '')
+      .split(',')
+      .map(s => s.trim())
+      .filter(Boolean);
+    return admins.includes(String(userId));
   }
 
   // ========================================
