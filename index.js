@@ -117,6 +117,16 @@ if (bot && commandHandler && messageHandler) {
     commandHandler.handleNext(msg);
   });
 
+  // Handle /train command (focused training mode)
+  bot.onText(/\/train/, (msg) => {
+    commandHandler.handleTrain(msg);
+  });
+
+  // Handle /cancel_training command (exit training mode)
+  bot.onText(/\/cancel_training/, (msg) => {
+    commandHandler.handleCancelTraining(msg);
+  });
+
   // Handle callback queries (button clicks)
   bot.on('callback_query', (query) => {
     messageHandler.handleCallbackQuery(query);

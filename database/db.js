@@ -85,6 +85,21 @@ class DatabaseManager {
         UNIQUE(user_id, topic)
       )
     `);
+
+    // Training sessions - tracks training mode sessions
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS training_sessions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER,
+        topic TEXT,
+        challenges_completed INTEGER DEFAULT 0,
+        challenges_correct INTEGER DEFAULT 0,
+        started_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        completed_at DATETIME,
+        status TEXT DEFAULT 'active',
+        FOREIGN KEY (user_id) REFERENCES users(user_id)
+      )
+    `);
   }
 
   // ========================================
@@ -320,10 +335,88 @@ class DatabaseManager {
 
   getActiveUsers(days = 7) {
     const stmt = this.db.prepare(`
-      SELECT COUNT(*) as count FROM users 
+      SELECT COUNT(*) as count FROM users
       WHERE last_active >= datetime('now', '-' || ? || ' days')
     `);
     return stmt.get(days).count;
+  }
+
+  // ========================================
+  // Training Sessions Management
+  // ========================================
+
+  createTrainingSession(userId, topic) {
+    const stmt = this.db.prepare(`
+      INSERT INTO training_sessions (user_id, topic, status)
+      VALUES (?, ?, 'active')
+    `);
+    const result = stmt.run(userId, topic);
+    return result.lastInsertRowid;
+  }
+
+  getActiveTrainingSession(userId) {
+    const stmt = this.db.prepare(`
+      SELECT * FROM training_sessions
+      WHERE user_id = ? AND status = 'active'
+      ORDER BY started_at DESC
+      LIMIT 1
+    `);
+    return stmt.get(userId);
+  }
+
+  updateTrainingProgress(sessionId, completed, correct) {
+    const stmt = this.db.prepare(`
+      UPDATE training_sessions
+      SET challenges_completed = ?,
+          challenges_correct = ?
+      WHERE id = ?
+    `);
+    stmt.run(completed, correct, sessionId);
+  }
+
+  completeTrainingSession(sessionId) {
+    const stmt = this.db.prepare(`
+      UPDATE training_sessions
+      SET status = 'completed',
+          completed_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `);
+    stmt.run(sessionId);
+  }
+
+  cancelTrainingSession(sessionId) {
+    const stmt = this.db.prepare(`
+      UPDATE training_sessions
+      SET status = 'cancelled',
+          completed_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `);
+    stmt.run(sessionId);
+  }
+
+  getTrainingHistory(userId, limit = 10) {
+    const stmt = this.db.prepare(`
+      SELECT * FROM training_sessions
+      WHERE user_id = ?
+      ORDER BY started_at DESC
+      LIMIT ?
+    `);
+    return stmt.all(userId, limit);
+  }
+
+  getTrainingStats(userId) {
+    const stmt = this.db.prepare(`
+      SELECT
+        topic,
+        COUNT(*) as sessions_count,
+        SUM(challenges_completed) as total_challenges,
+        SUM(challenges_correct) as total_correct,
+        CAST(SUM(challenges_correct) AS FLOAT) / NULLIF(SUM(challenges_completed), 0) as success_rate
+      FROM training_sessions
+      WHERE user_id = ? AND status = 'completed'
+      GROUP BY topic
+    `);
+    return stmt.all(userId);
   }
 
   // ========================================
