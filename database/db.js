@@ -5,7 +5,7 @@ const fs = require('fs');
 class DatabaseManager {
   constructor() {
     // Use persistent disk on Render if available, otherwise use local path
-    const dbPath = process.env.DATABASE_PATH || '/opt/render/project/data/users.db';
+    const dbPath = process.env.DATABASE_PATH || '/data/users.db';
 
     // Create database directory if it doesn't exist
     const dbDir = path.dirname(dbPath);
