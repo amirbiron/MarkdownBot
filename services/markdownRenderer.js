@@ -21,8 +21,22 @@ class MarkdownRenderer {
       pedantic: false,
       sanitize: false,
       smartLists: true,
-      smartypants: false
+      smartypants: false,
+      renderer: new marked.Renderer()
     });
+
+    // Custom renderer for code blocks to support Mermaid
+    const renderer = new marked.Renderer();
+    const originalCodeRenderer = renderer.code.bind(renderer);
+
+    renderer.code = function(code, language) {
+      if (language === 'mermaid') {
+        return `<div class="mermaid">\n${code}\n</div>`;
+      }
+      return originalCodeRenderer(code, language);
+    };
+
+    marked.setOptions({ renderer });
   }
 
   // ========================================
@@ -160,7 +174,26 @@ class MarkdownRenderer {
     }
 
     ${themeCSS}
+
+    /* Mermaid diagram styles */
+    .mermaid {
+      direction: ltr;
+      text-align: center;
+      margin: 1em auto;
+    }
   </style>
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'default',
+      flowchart: {
+        useMaxWidth: true,
+        htmlLabels: true,
+        curve: 'basis'
+      }
+    });
+  </script>
 </head>
 <body>
   <div class="markdown-body">

@@ -426,7 +426,7 @@ class CommandHandler {
       return;
     }
 
-    const totalLessons = 15; // Total number of lessons
+    const totalLessons = 14; // Total number of lessons (excluding tips)
     const progressPercentage = ((progress.lessons_completed / totalLessons) * 100).toFixed(1);
     
     // Create progress bar
@@ -487,7 +487,7 @@ class CommandHandler {
     const nextLessonId = progress.current_lesson + 1;
 
     // Check if there are more lessons
-    const totalLessons = 40; // We have 40 lessons total (15 lessons + 25 tips)
+    const totalLessons = 39; // We have 39 lessons total (14 lessons + 25 tips)
 
     if (nextLessonId > totalLessons) {
       await this.bot.sendMessage(chatId,
