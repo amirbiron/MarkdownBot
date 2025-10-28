@@ -261,6 +261,41 @@ class DatabaseManager {
     stmt.run(pace, userId);
   }
 
+  resetUserProgress(userId) {
+    const trx = this.db.transaction((uid) => {
+      // Reset core progress fields
+      const resetStmt = this.db.prepare(`
+        UPDATE user_progress
+        SET current_lesson = 0,
+            total_score = 0,
+            level = 'Beginner',
+            lessons_completed = 0,
+            correct_answers = 0,
+            wrong_answers = 0,
+            last_lesson_date = NULL
+        WHERE user_id = ?
+      `);
+      resetStmt.run(uid);
+
+      // Clear lesson history and topic performance
+      const delHistory = this.db.prepare('DELETE FROM lesson_history WHERE user_id = ?');
+      delHistory.run(uid);
+      const delTopics = this.db.prepare('DELETE FROM topic_performance WHERE user_id = ?');
+      delTopics.run(uid);
+
+      // Reset user mode to normal
+      const resetMode = this.db.prepare(`
+        INSERT OR REPLACE INTO user_modes (user_id, current_mode, mode_data, updated_at)
+        VALUES (?, 'normal', NULL, CURRENT_TIMESTAMP)
+      `);
+      resetMode.run(uid);
+    });
+
+    trx(userId);
+
+    console.log(`🧹 Reset progress for user ${userId}`);
+  }
+
   // ========================================
   // Lesson History
   // ========================================

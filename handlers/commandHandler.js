@@ -65,7 +65,7 @@ class CommandHandler {
 
     this.db.updateLastActive(userId);
 
-    const helpText =
+    let helpText =
       `📚 *עזרה - Markdown Trainer Bot*\n\n` +
       `*פקודות זמינות:*\n\n` +
       `🎓 *למידה:*\n` +
@@ -85,8 +85,13 @@ class CommandHandler {
       `• השתמש באימון ממוקד (/train) לתרגל נושאים ספציפיים\n` +
       `• השתמש במעבדה (/sandbox) כדי לראות איך הקוד שלך נראה\n` +
       `• השתמש בתבניות (/templates) לקבלת נקודת פתיחה מקצועית\n` +
-      `• תרגל כל יום כדי לשפר את הכישורים שלך\n\n` +
-      `שאלות? צור קשר עם היוצר: @moominAmir`;
+      `• תרגל כל יום כדי לשפר את הכישורים שלך`;
+
+    if (this.isAdmin(userId)) {
+      helpText += `\n\n🧰 *אדמין:*\n/reset_progress - אפס התקדמות (כדי לאפס משתמש אחר, שלח כ-reply)`;
+    }
+
+    helpText += `\n\nשאלות? צור קשר עם היוצר: @moominAmir`;
 
     try {
       await this.bot.sendMessage(chatId, helpText, { parse_mode: 'Markdown' });
@@ -95,6 +100,46 @@ class CommandHandler {
       // Try without markdown parsing if it fails
       await this.bot.sendMessage(chatId, helpText.replace(/\*/g, ''));
     }
+  }
+
+  // ========================================
+  // /reset_progress - Admin only: reset a user's progress
+  // ========================================
+  async handleResetProgress(msg) {
+    const chatId = msg.chat.id;
+    const fromUserId = msg.from.id;
+
+    if (!this.isAdmin(fromUserId)) {
+      await this.bot.sendMessage(chatId, '⛔ פקודה זו זמינה רק לאדמין.');
+      return;
+    }
+
+    // If used as reply, target is the replied user's id; otherwise self
+    const replyTo = msg.reply_to_message;
+    const targetUserId = replyTo?.from?.id || fromUserId;
+
+    const user = this.db.getUser(targetUserId);
+    if (!user) {
+      await this.bot.sendMessage(chatId, '❌ משתמש לא נמצא במסד הנתונים.');
+      return;
+    }
+
+    try {
+      this.db.resetUserProgress(targetUserId);
+      await this.bot.sendMessage(chatId, `✅ ההתקדמות אופסה עבור משתמש ${targetUserId}.\nאפשר להתחיל מחדש עם /next`);
+    } catch (e) {
+      console.error('Error resetting progress:', e);
+      await this.bot.sendMessage(chatId, '❌ שגיאה באיפוס ההתקדמות.');
+    }
+  }
+
+  // Check admin by env var list (comma-separated IDs)
+  isAdmin(userId) {
+    const admins = (process.env.ADMIN_USER_IDS || '')
+      .split(',')
+      .map(s => s.trim())
+      .filter(Boolean);
+    return admins.includes(String(userId));
   }
 
   // ========================================
@@ -410,7 +455,7 @@ class CommandHandler {
       for (let i = 0; i < lesson.messages.length; i++) {
         const message = lesson.messages[i];
         console.log(`Sending lesson ${lesson.id} message ${i+1}/${lesson.messages.length} to user ${userId}`);
-        await this.bot.sendMessage(chatId, message, { parse_mode: 'Markdown' });
+        await this.safeSendMarkdown(chatId, message);
         await this.sleep(1500);
       }
 
@@ -418,8 +463,7 @@ class CommandHandler {
       if (lesson.quiz) {
         console.log(`Sending lesson ${lesson.id} quiz to user ${userId}`);
         await this.sleep(1000);
-        await this.bot.sendMessage(chatId, lesson.quiz.question, {
-          parse_mode: 'Markdown',
+        await this.safeSendMarkdown(chatId, lesson.quiz.question, {
           reply_markup: {
             inline_keyboard: lesson.quiz.options.map((option, index) => [
               { text: option.text, callback_data: `answer_${lesson.id}_${index}` }
@@ -435,10 +479,9 @@ class CommandHandler {
         this.db.incrementLessonsCompleted(userId);
 
         await this.sleep(1000);
-        await this.bot.sendMessage(chatId,
+        await this.safeSendMarkdown(chatId,
           `✨ הוספתי לך ${points} נקודות!\n\n` +
-          `מוכן/ה לטיפ הבא? שלח /next! 🚀`,
-          { parse_mode: 'Markdown' }
+          `מוכן/ה לטיפ הבא? שלח /next! 🚀`
         );
         console.log(`✅ Tip ${lesson.id} sent successfully to user ${userId}`);
       }
@@ -448,6 +491,20 @@ class CommandHandler {
         '❌ אופס! משהו השתבש בשליחת השיעור.\n\n' +
         'נסה שוב עם /next או שלח /help לעזרה.'
       );
+    }
+  }
+
+  // Attempt to send message with Markdown, fallback to plain text on parse errors
+  async safeSendMarkdown(chatId, text, options = {}) {
+    try {
+      return await this.bot.sendMessage(chatId, text, { parse_mode: 'Markdown', ...options });
+    } catch (err) {
+      const desc = String(err?.response?.body?.description || err?.message || '').toLowerCase();
+      if (desc.includes("can't parse entities") || desc.includes('parse') || desc.includes('entity')) {
+        // Retry without parse mode
+        return await this.bot.sendMessage(chatId, text, { ...options });
+      }
+      throw err;
     }
   }
 
