@@ -37,6 +37,27 @@ class MessageHandler {
     // Get user's current mode
     const mode = this.db.getUserMode(userId);
 
+    // Check if message is from reply keyboard button (main menu buttons)
+    const mainMenuButtons = [
+      '📚 שיעור הבא',
+      '🧪 מעבדה',
+      '🎯 אימון',
+      '📊 התקדמות',
+      '📋 מדריך מהיר',
+      '📚 תבניות',
+      '❓ עזרה'
+    ];
+
+    // If user clicked a main menu button while in sandbox/training, exit that mode first
+    if (mainMenuButtons.includes(text) && (mode.current_mode === 'sandbox' || mode.current_mode === 'training')) {
+      // Clear the mode first
+      this.db.clearUserMode(userId);
+
+      // Now handle the button press normally
+      await this.handleNormalMessage(chatId, userId, text);
+      return;
+    }
+
     if (mode.current_mode === 'sandbox') {
       // User is in sandbox mode - render their markdown
       await this.handleSandboxInput(chatId, userId, text);

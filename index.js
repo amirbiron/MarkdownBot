@@ -73,88 +73,150 @@ if (bot) {
 }
 
 // ========================================
+// Maintenance Mode Middleware
+// ========================================
+const isMaintenanceMode = () => {
+  return process.env.MAINTENANCE_MODE === 'true';
+};
+
+const isAdmin = (userId) => {
+  const admins = (process.env.ADMIN_USER_IDS || '')
+    .split(',')
+    .map(s => s.trim())
+    .filter(Boolean);
+  return admins.includes(String(userId));
+};
+
+const maintenanceMiddleware = async (msg, next) => {
+  if (!isMaintenanceMode() || isAdmin(msg.from.id)) {
+    // Not in maintenance or user is admin - continue
+    return next();
+  }
+
+  // In maintenance mode and user is not admin - send friendly message
+  await bot.sendMessage(msg.chat.id,
+    '🔧 *הבוט במצב תחזוקה*\n\n' +
+    'אנחנו עושים שדרוג מהיר לבוט 🚀\n\n' +
+    'הכל יחזור לעבוד תוך כמה דקות.\n\n' +
+    'תודה על הסבלנות! 😊',
+    { parse_mode: 'Markdown' }
+  );
+  return false; // Block further processing
+};
+
+// ========================================
 // Bot Event Listeners
 // ========================================
 
 if (bot && commandHandler && messageHandler) {
   // Handle /start command
-  bot.onText(/\/start/, (msg) => {
-    commandHandler.handleStart(msg);
+  bot.onText(/\/start/, async (msg) => {
+    if (await maintenanceMiddleware(msg, () => true)) {
+      commandHandler.handleStart(msg);
+    }
   });
 
   // Handle /help command
-  bot.onText(/\/help/, (msg) => {
-    commandHandler.handleHelp(msg);
+  bot.onText(/\/help/, async (msg) => {
+    if (await maintenanceMiddleware(msg, () => true)) {
+      commandHandler.handleHelp(msg);
+    }
   });
 
   // Handle /sandbox command
-  bot.onText(/\/sandbox/, (msg) => {
-    commandHandler.handleSandbox(msg);
+  bot.onText(/\/sandbox/, async (msg) => {
+    if (await maintenanceMiddleware(msg, () => true)) {
+      commandHandler.handleSandbox(msg);
+    }
   });
 
   // Handle /exit command (exit sandbox mode)
-  bot.onText(/\/exit/, (msg) => {
-    commandHandler.handleExit(msg);
+  bot.onText(/\/exit/, async (msg) => {
+    if (await maintenanceMiddleware(msg, () => true)) {
+      commandHandler.handleExit(msg);
+    }
   });
 
   // Handle /themes command (select sandbox theme)
-  bot.onText(/\/themes/, (msg) => {
-    commandHandler.handleThemes(msg);
+  bot.onText(/\/themes/, async (msg) => {
+    if (await maintenanceMiddleware(msg, () => true)) {
+      commandHandler.handleThemes(msg);
+    }
   });
 
   // Handle /cheatsheet command
-  bot.onText(/\/cheatsheet/, (msg) => {
-    commandHandler.handleCheatsheet(msg);
+  bot.onText(/\/cheatsheet/, async (msg) => {
+    if (await maintenanceMiddleware(msg, () => true)) {
+      commandHandler.handleCheatsheet(msg);
+    }
   });
 
   // Handle /templates command
-  bot.onText(/\/templates/, (msg) => {
-    commandHandler.handleTemplates(msg);
+  bot.onText(/\/templates/, async (msg) => {
+    if (await maintenanceMiddleware(msg, () => true)) {
+      commandHandler.handleTemplates(msg);
+    }
   });
 
   // Handle /progress command (show user progress)
-  bot.onText(/\/progress/, (msg) => {
-    commandHandler.handleProgress(msg);
+  bot.onText(/\/progress/, async (msg) => {
+    if (await maintenanceMiddleware(msg, () => true)) {
+      commandHandler.handleProgress(msg);
+    }
   });
 
   // Handle /reset_progress command (admin only)
-  bot.onText(/\/reset_progress/, (msg) => {
-    commandHandler.handleResetProgress(msg);
+  bot.onText(/\/reset_progress/, async (msg) => {
+    if (await maintenanceMiddleware(msg, () => true)) {
+      commandHandler.handleResetProgress(msg);
+    }
   });
 
   // Handle /statistics command (admin only)
-  bot.onText(/\/statistics/, (msg) => {
-    commandHandler.handleStatistics(msg);
+  bot.onText(/\/statistics/, async (msg) => {
+    if (await maintenanceMiddleware(msg, () => true)) {
+      commandHandler.handleStatistics(msg);
+    }
   });
 
   // Handle /next command (next lesson)
-  bot.onText(/\/next/, (msg) => {
-    commandHandler.handleNext(msg);
+  bot.onText(/\/next/, async (msg) => {
+    if (await maintenanceMiddleware(msg, () => true)) {
+      commandHandler.handleNext(msg);
+    }
   });
 
   // Handle /train command (focused training mode)
-  bot.onText(/\/train/, (msg) => {
-    commandHandler.handleTrain(msg);
+  bot.onText(/\/train/, async (msg) => {
+    if (await maintenanceMiddleware(msg, () => true)) {
+      commandHandler.handleTrain(msg);
+    }
   });
 
   // Handle /cancel_training command (exit training mode)
-  bot.onText(/\/cancel_training/, (msg) => {
-    commandHandler.handleCancelTraining(msg);
+  bot.onText(/\/cancel_training/, async (msg) => {
+    if (await maintenanceMiddleware(msg, () => true)) {
+      commandHandler.handleCancelTraining(msg);
+    }
   });
 
   // Handle callback queries (button clicks)
-  bot.on('callback_query', (query) => {
-    messageHandler.handleCallbackQuery(query);
+  bot.on('callback_query', async (query) => {
+    if (await maintenanceMiddleware(query.message, () => true)) {
+      messageHandler.handleCallbackQuery(query);
+    }
   });
 
   // Handle all text messages (for sandbox mode and general chat)
-  bot.on('message', (msg) => {
+  bot.on('message', async (msg) => {
     // Skip if it's a command
     if (msg.text && msg.text.startsWith('/')) {
       return;
     }
-    
-    messageHandler.handleTextMessage(msg);
+
+    if (await maintenanceMiddleware(msg, () => true)) {
+      messageHandler.handleTextMessage(msg);
+    }
   });
 }
 
