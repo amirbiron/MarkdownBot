@@ -160,35 +160,59 @@ class CommandHandler {
       const activeUsers = this.db.getActiveUsers(days);
       const userStats = this.db.getUserActivityStats(days);
 
-      // Build statistics message
-      let statsText = `📊 *סטטיסטיקות משתמשים - ${days} ימים אחרונים*\n\n`;
-      statsText += `👥 סה"כ משתמשים במערכת: ${totalUsers}\n`;
-      statsText += `✅ משתמשים פעילים (${days} ימים): ${activeUsers}\n`;
-      statsText += `📈 אחוז פעילים: ${totalUsers > 0 ? ((activeUsers / totalUsers) * 100).toFixed(1) : 0}%\n\n`;
+      // Build header message
+      let headerText = `📊 *סטטיסטיקות משתמשים - ${days} ימים אחרונים*\n\n`;
+      headerText += `👥 סה"כ משתמשים במערכת: ${totalUsers}\n`;
+      headerText += `✅ משתמשים פעילים (${days} ימים): ${activeUsers}\n`;
+      headerText += `📈 אחוז פעילים: ${totalUsers > 0 ? ((activeUsers / totalUsers) * 100).toFixed(1) : 0}%\n\n`;
 
       if (userStats.length === 0) {
-        statsText += '❌ אין משתמשים פעילים בתקופה זו.';
-      } else {
-        statsText += `*פעילות משתמשים (${userStats.length} משתמשים):*\n`;
-        statsText += `━━━━━━━━━━━━━━━━━━━━\n\n`;
-
-        userStats.forEach((user, index) => {
-          const name = user.first_name || user.username || `User ${user.user_id}`;
-          const totalActions = (user.recent_lessons || 0) + (user.recent_training_sessions || 0);
-          const totalAnswers = (user.correct_answers || 0) + (user.wrong_answers || 0);
-          const accuracy = totalAnswers > 0 ? ((user.correct_answers / totalAnswers) * 100).toFixed(1) : 0;
-
-          statsText += `${index + 1}. *${name}* (ID: ${user.user_id})\n`;
-          statsText += `   📚 שיעורים: ${user.recent_lessons || 0} | 🎯 אימונים: ${user.recent_training_sessions || 0}\n`;
-          statsText += `   💯 סה"כ פעולות: ${totalActions}\n`;
-          statsText += `   ⭐ רמה: ${user.level || 'Beginner'} | נקודות: ${user.total_score || 0}\n`;
-          statsText += `   ✅ דיוק כללי: ${accuracy}%\n`;
-          statsText += `   🕐 פעילות אחרונה: ${this.formatDate(user.last_active)}\n\n`;
-        });
+        headerText += '❌ אין משתמשים פעילים בתקופה זו.';
+        await this.bot.sendMessage(chatId, headerText, { parse_mode: 'Markdown' });
+        return;
       }
 
-      // Send the message with markdown parsing
-      await this.bot.sendMessage(chatId, statsText, { parse_mode: 'Markdown' });
+      // Send header
+      headerText += `*פעילות משתמשים (${userStats.length} משתמשים):*\n`;
+      headerText += `━━━━━━━━━━━━━━━━━━━━`;
+      await this.bot.sendMessage(chatId, headerText, { parse_mode: 'Markdown' });
+
+      // Split user stats into chunks to avoid message length limit
+      const maxChunkSize = 3500; // Leave room for formatting
+      let currentChunk = '';
+      let messageCount = 0;
+
+      for (let index = 0; index < userStats.length; index++) {
+        const user = userStats[index];
+        const name = user.first_name || user.username || `User ${user.user_id}`;
+        const totalActions = (user.recent_lessons || 0) + (user.recent_training_sessions || 0);
+        const totalAnswers = (user.correct_answers || 0) + (user.wrong_answers || 0);
+        const accuracy = totalAnswers > 0 ? ((user.correct_answers / totalAnswers) * 100).toFixed(1) : 0;
+
+        const userText = `\n${index + 1}. *${name}* (ID: ${user.user_id})\n` +
+          `   📚 שיעורים: ${user.recent_lessons || 0} | 🎯 אימונים: ${user.recent_training_sessions || 0}\n` +
+          `   💯 סה"כ פעולות: ${totalActions}\n` +
+          `   ⭐ רמה: ${user.level || 'Beginner'} | נקודות: ${user.total_score || 0}\n` +
+          `   ✅ דיוק כללי: ${accuracy}%\n` +
+          `   🕐 פעילות אחרונה: ${this.formatDate(user.last_active)}\n`;
+
+        // Check if adding this user would exceed the limit
+        if (currentChunk.length + userText.length > maxChunkSize) {
+          // Send current chunk
+          await this.bot.sendMessage(chatId, currentChunk, { parse_mode: 'Markdown' });
+          await this.sleep(500); // Small delay between messages
+          currentChunk = userText;
+          messageCount++;
+        } else {
+          currentChunk += userText;
+        }
+      }
+
+      // Send remaining chunk if any
+      if (currentChunk.length > 0) {
+        await this.bot.sendMessage(chatId, currentChunk, { parse_mode: 'Markdown' });
+      }
+
     } catch (e) {
       console.error('Error getting statistics:', e);
       await this.bot.sendMessage(chatId, '❌ שגיאה בשליפת הסטטיסטיקות.');
