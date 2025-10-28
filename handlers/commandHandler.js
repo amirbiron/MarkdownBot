@@ -410,7 +410,7 @@ class CommandHandler {
       for (let i = 0; i < lesson.messages.length; i++) {
         const message = lesson.messages[i];
         console.log(`Sending lesson ${lesson.id} message ${i+1}/${lesson.messages.length} to user ${userId}`);
-        await this.bot.sendMessage(chatId, message, { parse_mode: 'Markdown' });
+        await this.safeSendMarkdown(chatId, message);
         await this.sleep(1500);
       }
 
@@ -418,8 +418,7 @@ class CommandHandler {
       if (lesson.quiz) {
         console.log(`Sending lesson ${lesson.id} quiz to user ${userId}`);
         await this.sleep(1000);
-        await this.bot.sendMessage(chatId, lesson.quiz.question, {
-          parse_mode: 'Markdown',
+        await this.safeSendMarkdown(chatId, lesson.quiz.question, {
           reply_markup: {
             inline_keyboard: lesson.quiz.options.map((option, index) => [
               { text: option.text, callback_data: `answer_${lesson.id}_${index}` }
@@ -435,10 +434,9 @@ class CommandHandler {
         this.db.incrementLessonsCompleted(userId);
 
         await this.sleep(1000);
-        await this.bot.sendMessage(chatId,
+        await this.safeSendMarkdown(chatId,
           `✨ הוספתי לך ${points} נקודות!\n\n` +
-          `מוכן/ה לטיפ הבא? שלח /next! 🚀`,
-          { parse_mode: 'Markdown' }
+          `מוכן/ה לטיפ הבא? שלח /next! 🚀`
         );
         console.log(`✅ Tip ${lesson.id} sent successfully to user ${userId}`);
       }
@@ -448,6 +446,20 @@ class CommandHandler {
         '❌ אופס! משהו השתבש בשליחת השיעור.\n\n' +
         'נסה שוב עם /next או שלח /help לעזרה.'
       );
+    }
+  }
+
+  // Attempt to send message with Markdown, fallback to plain text on parse errors
+  async safeSendMarkdown(chatId, text, options = {}) {
+    try {
+      return await this.bot.sendMessage(chatId, text, { parse_mode: 'Markdown', ...options });
+    } catch (err) {
+      const desc = String(err?.response?.body?.description || err?.message || '').toLowerCase();
+      if (desc.includes("can't parse entities") || desc.includes('parse') || desc.includes('entity')) {
+        // Retry without parse mode
+        return await this.bot.sendMessage(chatId, text, { ...options });
+      }
+      throw err;
     }
   }
 
