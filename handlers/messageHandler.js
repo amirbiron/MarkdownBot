@@ -55,12 +55,15 @@ class MessageHandler {
   async handleSandboxInput(chatId, userId, markdownText) {
     try {
       // Send "processing" message
-      const processingMsg = await this.bot.sendMessage(chatId, 
+      const processingMsg = await this.bot.sendMessage(chatId,
         '⏳ מעבד את הקוד שלך...'
       );
 
+      // Get user's theme preference
+      const theme = this.db.getSandboxTheme(userId);
+
       // Render markdown to image
-      const imagePath = await this.renderer.renderMarkdown(markdownText, userId);
+      const imagePath = await this.renderer.renderMarkdown(markdownText, userId, theme);
 
       // Delete processing message
       await this.bot.deleteMessage(chatId, processingMsg.message_id);
@@ -153,6 +156,8 @@ class MessageHandler {
       await this.handlePaceSelection(chatId, userId, data, messageId);
     } else if (data.startsWith('answer_')) {
       await this.handleQuizAnswer(chatId, userId, data, messageId);
+    } else if (data.startsWith('theme_')) {
+      await this.handleThemeSelection(chatId, userId, data, messageId);
     } else if (data.startsWith('cheat_')) {
       await this.handleCheatsheetTopic(chatId, userId, data, query.message.message_id);
     } else if (data.startsWith('copy_')) {
@@ -1072,6 +1077,54 @@ class MessageHandler {
         'נסה שוב מאוחר יותר.'
       );
     }
+  }
+
+  // ========================================
+  // Handle Theme Selection
+  // ========================================
+  async handleThemeSelection(chatId, userId, data, messageId) {
+    // Extract theme ID from callback data: theme_github-dark
+    const themeId = data.replace('theme_', '');
+
+    // Update user's theme preference
+    this.db.setSandboxTheme(userId, themeId);
+
+    // Get theme display name
+    const themeNames = {
+      'github-light': 'GitHub Light',
+      'github-dark': 'GitHub Dark',
+      'light-mode': 'Light Mode',
+      'dark-mode': 'Dark Mode',
+      'notion': 'Notion Style'
+    };
+    const themeName = themeNames[themeId] || 'GitHub Light';
+    const themeEmojis = {
+      'github-light': '☀️',
+      'github-dark': '🌙',
+      'light-mode': '⚪',
+      'dark-mode': '⚫',
+      'notion': '📝'
+    };
+    const emoji = themeEmojis[themeId] || '☀️';
+
+    // Remove the keyboard
+    try {
+      await this.bot.editMessageReplyMarkup(
+        { inline_keyboard: [] },
+        { chat_id: chatId, message_id: messageId }
+      );
+    } catch (error) {
+      // Ignore if message is too old or already edited
+      console.log('Could not edit message markup:', error.message);
+    }
+
+    // Send confirmation
+    await this.bot.sendMessage(chatId,
+      `${emoji} *ערכת הנושא עודכנה בהצלחה!*\n\n` +
+      `ערכת הנושא החדשה: *${themeName}*\n\n` +
+      `כל קוד שתשלח עכשיו ב-/sandbox יוצג בסגנון זה. 🎨`,
+      { parse_mode: 'Markdown' }
+    );
   }
 
   // ========================================

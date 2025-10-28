@@ -77,6 +77,7 @@ class CommandHandler {
       `/cancel_training - בטל אימון פעיל\n\n` +
       `🛠️ *כלים:*\n` +
       `/sandbox - פתח מעבדת תרגול (Markdown → תמונה)\n` +
+      `/themes - בחר ערכת נושא לארגז החול\n` +
       `/templates - תבניות Markdown מוכנות לשימוש\n` +
       `/cheatsheet - הצג מדריך מהיר\n` +
       `/exit - צא ממצב מעבדה\n\n` +
@@ -85,7 +86,7 @@ class CommandHandler {
       `• השתמש במעבדה (/sandbox) כדי לראות איך הקוד שלך נראה\n` +
       `• השתמש בתבניות (/templates) לקבלת נקודת פתיחה מקצועית\n` +
       `• תרגל כל יום כדי לשפר את הכישורים שלך\n\n` +
-      `שאלות? צור קשר עם היוצר: @amirbiron`;
+      `שאלות? צור קשר עם היוצר: @moominAmir`;
 
     try {
       await this.bot.sendMessage(chatId, helpText, { parse_mode: 'Markdown' });
@@ -94,6 +95,61 @@ class CommandHandler {
       // Try without markdown parsing if it fails
       await this.bot.sendMessage(chatId, helpText.replace(/\*/g, ''));
     }
+  }
+
+  // ========================================
+  // /themes - Select sandbox theme
+  // ========================================
+  async handleThemes(msg) {
+    const chatId = msg.chat.id;
+    const userId = msg.from.id;
+
+    this.db.updateLastActive(userId);
+
+    // Get current theme
+    const currentTheme = this.db.getSandboxTheme(userId);
+    const themeEmojis = {
+      'github-light': '☀️',
+      'github-dark': '🌙',
+      'light-mode': '⚪',
+      'dark-mode': '⚫',
+      'notion': '📝'
+    };
+
+    await this.bot.sendMessage(chatId,
+      `🎨 *בחירת ערכת נושא לארגז החול*\n\n` +
+      `ערכת הנושא הנוכחית: ${themeEmojis[currentTheme] || '☀️'} ${this.getThemeName(currentTheme)}\n\n` +
+      `בחר ערכת נושא חדשה:`,
+      {
+        parse_mode: 'Markdown',
+        reply_markup: {
+          inline_keyboard: [
+            [
+              { text: '☀️ GitHub Light', callback_data: 'theme_github-light' },
+              { text: '🌙 GitHub Dark', callback_data: 'theme_github-dark' }
+            ],
+            [
+              { text: '⚪ Light Mode', callback_data: 'theme_light-mode' },
+              { text: '⚫ Dark Mode', callback_data: 'theme_dark-mode' }
+            ],
+            [
+              { text: '📝 Notion Style', callback_data: 'theme_notion' }
+            ]
+          ]
+        }
+      }
+    );
+  }
+
+  getThemeName(themeId) {
+    const names = {
+      'github-light': 'GitHub Light',
+      'github-dark': 'GitHub Dark',
+      'light-mode': 'Light Mode',
+      'dark-mode': 'Dark Mode',
+      'notion': 'Notion Style'
+    };
+    return names[themeId] || 'GitHub Light';
   }
 
   // ========================================
@@ -119,7 +175,9 @@ class CommandHandler {
       `- פריט ראשון\n` +
       `- פריט שני\n` +
       `\`\`\`\n\n` +
-      `💡 *טיפ:* כדי לצאת מהמעבדה, שלח /exit`,
+      `💡 *טיפים:*\n` +
+      `• כדי לשנות ערכת נושא, שלח /themes\n` +
+      `• כדי לצאת מהמעבדה, שלח /exit`,
       { parse_mode: 'Markdown' }
     );
   }
