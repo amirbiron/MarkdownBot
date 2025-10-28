@@ -722,7 +722,19 @@ class MessageHandler {
         });
         console.log(`✅ Lesson ${lesson.id} sent successfully to user ${userId}`);
       } else {
-        console.log(`ℹ️ Lesson ${lesson.id} has no quiz (tip lesson)`);
+        // This is a tip lesson (no quiz) - award points automatically
+        console.log(`ℹ️ Lesson ${lesson.id} has no quiz (tip lesson) - awarding points automatically`);
+        const points = lesson.points || 5;
+        this.db.incrementScore(userId, points);
+        this.db.incrementLessonsCompleted(userId);
+
+        await this.sleep(1000);
+        await this.bot.sendMessage(chatId,
+          `✨ הוספתי לך ${points} נקודות!\n\n` +
+          `מוכן/ה לטיפ הבא? שלח /next! 🚀`,
+          { parse_mode: 'Markdown' }
+        );
+        console.log(`✅ Tip ${lesson.id} sent successfully to user ${userId}`);
       }
     } catch (error) {
       console.error(`❌ Error sending lesson ${lesson.id} to user ${userId}:`, error);
