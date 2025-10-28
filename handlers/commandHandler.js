@@ -88,7 +88,7 @@ class CommandHandler {
       `• תרגל כל יום כדי לשפר את הכישורים שלך`;
 
     if (this.isAdmin(userId)) {
-      helpText += `\n\n🧰 *אדמין:*\n/reset_progress - אפס התקדמות (כדי לאפס משתמש אחר, שלח כ-reply)`;
+      helpText += `\n\n🧰 *אדמין:*\n/reset_progress - אפס התקדמות (כדי לאפס משתמש אחר, שלח כ-reply)\n/statistics - הצג סטטיסטיקות משתמשים`;
     }
 
     helpText += `\n\nשאלות? צור קשר עם היוצר: @moominAmir`;
@@ -140,6 +140,76 @@ class CommandHandler {
       .map(s => s.trim())
       .filter(Boolean);
     return admins.includes(String(userId));
+  }
+
+  // ========================================
+  // /statistics - Admin only: show user activity statistics
+  // ========================================
+  async handleStatistics(msg) {
+    const chatId = msg.chat.id;
+    const fromUserId = msg.from.id;
+
+    if (!this.isAdmin(fromUserId)) {
+      await this.bot.sendMessage(chatId, '⛔ פקודה זו זמינה רק לאדמין.');
+      return;
+    }
+
+    try {
+      const days = 7; // Last 7 days
+      const totalUsers = this.db.getTotalUsers();
+      const activeUsers = this.db.getActiveUsers(days);
+      const userStats = this.db.getUserActivityStats(days);
+
+      // Build statistics message
+      let statsText = `📊 *סטטיסטיקות משתמשים - ${days} ימים אחרונים*\n\n`;
+      statsText += `👥 סה"כ משתמשים במערכת: ${totalUsers}\n`;
+      statsText += `✅ משתמשים פעילים (${days} ימים): ${activeUsers}\n`;
+      statsText += `📈 אחוז פעילים: ${totalUsers > 0 ? ((activeUsers / totalUsers) * 100).toFixed(1) : 0}%\n\n`;
+
+      if (userStats.length === 0) {
+        statsText += '❌ אין משתמשים פעילים בתקופה זו.';
+      } else {
+        statsText += `*פעילות משתמשים (${userStats.length} משתמשים):*\n`;
+        statsText += `━━━━━━━━━━━━━━━━━━━━\n\n`;
+
+        userStats.forEach((user, index) => {
+          const name = user.first_name || user.username || `User ${user.user_id}`;
+          const totalActions = (user.recent_lessons || 0) + (user.recent_training_sessions || 0);
+          const totalAnswers = (user.correct_answers || 0) + (user.wrong_answers || 0);
+          const accuracy = totalAnswers > 0 ? ((user.correct_answers / totalAnswers) * 100).toFixed(1) : 0;
+
+          statsText += `${index + 1}. *${name}* (ID: ${user.user_id})\n`;
+          statsText += `   📚 שיעורים: ${user.recent_lessons || 0} | 🎯 אימונים: ${user.recent_training_sessions || 0}\n`;
+          statsText += `   💯 סה"כ פעולות: ${totalActions}\n`;
+          statsText += `   ⭐ רמה: ${user.level || 'Beginner'} | נקודות: ${user.total_score || 0}\n`;
+          statsText += `   ✅ דיוק כללי: ${accuracy}%\n`;
+          statsText += `   🕐 פעילות אחרונה: ${this.formatDate(user.last_active)}\n\n`;
+        });
+      }
+
+      // Send the message with markdown parsing
+      await this.bot.sendMessage(chatId, statsText, { parse_mode: 'Markdown' });
+    } catch (e) {
+      console.error('Error getting statistics:', e);
+      await this.bot.sendMessage(chatId, '❌ שגיאה בשליפת הסטטיסטיקות.');
+    }
+  }
+
+  // Helper function to format date
+  formatDate(dateString) {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'כרגע';
+    if (diffMins < 60) return `לפני ${diffMins} דקות`;
+    if (diffHours < 24) return `לפני ${diffHours} שעות`;
+    if (diffDays < 7) return `לפני ${diffDays} ימים`;
+    return date.toLocaleDateString('he-IL');
   }
 
   // ========================================

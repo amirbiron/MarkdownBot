@@ -122,6 +122,11 @@ if (bot && commandHandler && messageHandler) {
     commandHandler.handleResetProgress(msg);
   });
 
+  // Handle /statistics command (admin only)
+  bot.onText(/\/statistics/, (msg) => {
+    commandHandler.handleStatistics(msg);
+  });
+
   // Handle /next command (next lesson)
   bot.onText(/\/next/, (msg) => {
     commandHandler.handleNext(msg);

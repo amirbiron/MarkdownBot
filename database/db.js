@@ -432,6 +432,33 @@ class DatabaseManager {
     return stmt.get(days).count;
   }
 
+  getUserActivityStats(days = 7) {
+    const stmt = this.db.prepare(`
+      SELECT
+        u.user_id,
+        u.username,
+        u.first_name,
+        u.last_name,
+        u.last_active,
+        up.lessons_completed,
+        up.correct_answers,
+        up.wrong_answers,
+        up.total_score,
+        up.level,
+        (SELECT COUNT(*) FROM lesson_history lh
+         WHERE lh.user_id = u.user_id
+         AND lh.completed_at >= datetime('now', '-' || ? || ' days')) as recent_lessons,
+        (SELECT COUNT(*) FROM training_sessions ts
+         WHERE ts.user_id = u.user_id
+         AND ts.started_at >= datetime('now', '-' || ? || ' days')) as recent_training_sessions
+      FROM users u
+      LEFT JOIN user_progress up ON u.user_id = up.user_id
+      WHERE u.last_active >= datetime('now', '-' || ? || ' days')
+      ORDER BY recent_lessons DESC, u.last_active DESC
+    `);
+    return stmt.all(days, days, days);
+  }
+
   // ========================================
   // Training Sessions Management
   // ========================================
