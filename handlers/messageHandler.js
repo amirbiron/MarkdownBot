@@ -1,10 +1,25 @@
 const MarkdownRenderer = require('../services/markdownRenderer');
+const ShareImageGenerator = require('../services/shareImageGenerator');
+const fs = require('fs');
+const path = require('path');
 
 class MessageHandler {
   constructor(bot, db) {
     this.bot = bot;
     this.db = db;
     this.renderer = new MarkdownRenderer();
+    this.shareGenerator = new ShareImageGenerator();
+
+    // Create temp directory for template files if not exists
+    this.tempDir = path.join(__dirname, '../temp');
+    if (!fs.existsSync(this.tempDir)) {
+      fs.mkdirSync(this.tempDir, { recursive: true });
+    }
+
+    // Clean up old share images periodically
+    setInterval(() => {
+      this.shareGenerator.cleanupOldImages();
+    }, 60 * 60 * 1000); // Every hour
   }
 
   // ========================================
@@ -159,6 +174,8 @@ class MessageHandler {
       await this.handleTrainingSkip(chatId, userId);
     } else if (data === 'train_exit') {
       await this.handleTrainingExit(chatId, userId);
+    } else if (data.startsWith('share_')) {
+      await this.handleShareAchievement(chatId, userId, data, query.from);
     }
   }
 
@@ -251,9 +268,16 @@ class MessageHandler {
 
       await this.sleep(2000);
 
-      // Prompt for next lesson
+      // Prompt for next lesson with share button
       await this.bot.sendMessage(chatId,
-        'מוכן/ה להמשיך? שלח /next לשיעור הבא! 🚀'
+        'מוכן/ה להמשיך? שלח /next לשיעור הבא! 🚀',
+        {
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: '🔖 שתף את ההישג', callback_data: 'share_lesson' }]
+            ]
+          }
+        }
       );
 
     } else {
@@ -467,12 +491,29 @@ class MessageHandler {
       return;
     }
 
-    // Send as document (file)
-    const buffer = Buffer.from(template.content, 'utf-8');
-    await this.bot.sendDocument(chatId, buffer, {
-      filename: `${templateId}_template.md`,
-      caption: `📄 ${template.title}\n\n💡 הורד את הקובץ, ערוך אותו בעורך טקסט, והתאם לצרכים שלך!`
-    });
+    try {
+      // Save template to temp file
+      const filename = `${templateId}_template.md`;
+      const filePath = path.join(this.tempDir, `${userId}_${filename}`);
+
+      fs.writeFileSync(filePath, template.content, 'utf-8');
+
+      // Send as document (file)
+      await this.bot.sendDocument(chatId, filePath, {
+        caption: `📄 ${template.title}\n\n💡 הורד את הקובץ, ערוך אותו בעורך טקסט, והתאם לצרכים שלך!`
+      });
+
+      // Clean up temp file after sending
+      setTimeout(() => {
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+        }
+      }, 5000);
+
+    } catch (error) {
+      console.error('Error sending template file:', error);
+      await this.bot.sendMessage(chatId, '❌ שגיאה בשליחת הקובץ. נסה שוב מאוחר יותר.');
+    }
   }
 
   // ========================================
@@ -506,12 +547,30 @@ class MessageHandler {
 
       await this.sleep(500);
 
-      // Send as document (file)
-      const buffer = Buffer.from(template.content, 'utf-8');
-      await this.bot.sendDocument(chatId, buffer, {
-        filename: `${templateId}_template.md`,
-        caption: '💡 הורד את הקובץ, ערוך אותו בעורך טקסט, והתאם לצרכים שלך!'
-      });
+      try {
+        // Save template to temp file
+        const filename = `${templateId}_template.md`;
+        const filePath = path.join(this.tempDir, `${userId}_${filename}`);
+
+        fs.writeFileSync(filePath, template.content, 'utf-8');
+
+        // Send as document (file)
+        await this.bot.sendDocument(chatId, filePath, {
+          caption: '💡 הורד את הקובץ, ערוך אותו בעורך טקסט, והתאם לצרכים שלך!'
+        });
+
+        // Clean up temp file after sending
+        setTimeout(() => {
+          if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+          }
+        }, 5000);
+
+      } catch (error) {
+        console.error('Error sending template file:', error);
+        await this.bot.sendMessage(chatId, '❌ שגיאה בשליחת הקובץ. נסה שוב מאוחר יותר.');
+        return;
+      }
 
     } else {
       // For other templates, send as text with option to download
@@ -605,14 +664,21 @@ class MessageHandler {
 
     if (newLevel) {
       this.db.updateLevel(userId, newLevel);
-      
+
       await this.sleep(1000);
-      
+
       await this.bot.sendMessage(chatId,
         `${levelEmoji} *עלית דרגה!* ${levelEmoji}\n\n` +
         `הדרגה החדשה שלך: *${newLevel}*\n\n` +
         `כל הכבוד על ההתקדמות! 🎉`,
-        { parse_mode: 'Markdown' }
+        {
+          parse_mode: 'Markdown',
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: '🔖 שתף את ההישג', callback_data: 'share_level' }]
+            ]
+          }
+        }
       );
     }
   }
@@ -923,8 +989,89 @@ class MessageHandler {
       `🎯 /train - אימון נוסף בנושא אחר\n` +
       `📚 /next - המשך בשיעורים\n` +
       `📊 /progress - הצג התקדמות כללית`,
-      { parse_mode: 'Markdown' }
+      {
+        parse_mode: 'Markdown',
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: '🔖 שתף את ההישג', callback_data: 'share_training' }]
+          ]
+        }
+      }
     );
+  }
+
+  // ========================================
+  // Handle Share Achievement
+  // ========================================
+  async handleShareAchievement(chatId, userId, data, fromUser) {
+    try {
+      // Parse share data: share_type_extraData
+      const parts = data.split('_');
+      const shareType = parts[1]; // 'lesson', 'level', or 'training'
+
+      const progress = this.db.getUserProgress(userId);
+      const userName = fromUser.first_name || 'משתמש';
+
+      let shareData = {
+        userName,
+        level: progress.level,
+        score: progress.total_score
+      };
+
+      // Customize message based on type
+      if (shareType === 'lesson') {
+        shareData.type = 'lesson';
+        shareData.achievement = 'עוד שיעור הושלם בהצלחה!';
+        shareData.details = `${progress.lessons_completed} שיעורים הושלמו`;
+      } else if (shareType === 'level') {
+        shareData.type = 'level_up';
+        shareData.achievement = 'עליתי דרגה!';
+        shareData.details = `הדרגה החדשה: ${progress.level}`;
+      } else if (shareType === 'training') {
+        shareData.type = 'training';
+        shareData.achievement = 'סיימתי אימון ממוקד!';
+        shareData.details = 'התאמנתי והשתפרתי';
+      }
+
+      // Show loading message
+      const loadingMsg = await this.bot.sendMessage(chatId,
+        '🖼️ מכין לך תמונה יפה לשיתוף...'
+      );
+
+      // Generate share image
+      const imagePath = await this.shareGenerator.generateShareImage(shareData, userId);
+
+      // Delete loading message
+      await this.bot.deleteMessage(chatId, loadingMsg.message_id);
+
+      // Send the share image with sharing options
+      await this.bot.sendPhoto(chatId, imagePath, {
+        caption:
+          '🎉 *הנה התמונה שלך!*\n\n' +
+          'העתק את ההודעה למטה ושתף עם החברים שלך:\n\n' +
+          '━━━━━━━━━━━━\n\n' +
+          `🎉 ${shareData.achievement}\n\n` +
+          'לומד/ת Markdown שלב אחר שלב עם Markdown Trainer!\n' +
+          'ממליץ בחום לכל מי שרוצה לשדרג את הכתיבה הטכנית שלו 👇\n\n' +
+          't.me/MarkdownTrainerBot\n\n' +
+          '━━━━━━━━━━━━',
+        parse_mode: 'Markdown'
+      });
+
+      // Clean up image after a delay
+      setTimeout(() => {
+        if (fs.existsSync(imagePath)) {
+          fs.unlinkSync(imagePath);
+        }
+      }, 60000); // Delete after 1 minute
+
+    } catch (error) {
+      console.error('Error generating share image:', error);
+      await this.bot.sendMessage(chatId,
+        '❌ אופס! משהו השתבש ביצירת תמונת השיתוף.\n\n' +
+        'נסה שוב מאוחר יותר.'
+      );
+    }
   }
 
   // ========================================

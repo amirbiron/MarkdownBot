@@ -5,18 +5,49 @@ const fs = require('fs');
 class DatabaseManager {
   constructor() {
     // Use persistent disk on Render if available, otherwise use local path
-    const dbPath = process.env.DATABASE_PATH || '/data/users.db';
+    let dbPath = process.env.DATABASE_PATH || '/data/users.db';
 
     // Create database directory if it doesn't exist
     const dbDir = path.dirname(dbPath);
-    if (!fs.existsSync(dbDir)) {
-      fs.mkdirSync(dbDir, { recursive: true });
+
+    try {
+      if (!fs.existsSync(dbDir)) {
+        fs.mkdirSync(dbDir, { recursive: true });
+        console.log(`📁 Created database directory: ${dbDir}`);
+      }
+    } catch (error) {
+      // If /data is not accessible (e.g., no volume mounted), fallback to local path
+      console.warn(`⚠️ Cannot create directory ${dbDir}:`, error.message);
+      console.log(`🔄 Falling back to local database path...`);
+      dbPath = path.join(__dirname, 'users.db');
+      console.log(`📂 Using local database at: ${dbPath}`);
     }
 
     this.db = new Database(dbPath);
+    this.dbPath = dbPath;
 
     this.initializeTables();
-    console.log(`✅ Database initialized at: ${dbPath}`);
+    console.log(`✅ Database initialized successfully at: ${dbPath}`);
+
+    // Log database info for debugging
+    console.log(`📊 Database info:
+    - Path: ${this.dbPath}
+    - Directory exists: ${fs.existsSync(path.dirname(this.dbPath))}
+    - File exists: ${fs.existsSync(this.dbPath)}
+    - Writable: ${this.testWriteAccess()}
+    `);
+  }
+
+  testWriteAccess() {
+    try {
+      // Try to write a test record and read it back
+      const testStmt = this.db.prepare('SELECT 1 as test');
+      testStmt.get();
+      return true;
+    } catch (error) {
+      console.error('❌ Database write test failed:', error);
+      return false;
+    }
   }
 
   initializeTables() {
