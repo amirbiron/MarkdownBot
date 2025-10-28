@@ -109,6 +109,8 @@ class MessageHandler {
       await this.handleCheatsheetTopic(chatId, userId, data, query.message.message_id);
     } else if (data.startsWith('copy_')) {
       await this.handleCopyExample(chatId, userId, data);
+    } else if (data.startsWith('template_')) {
+      await this.handleTemplateSelection(chatId, userId, data);
     }
   }
 
@@ -400,6 +402,80 @@ class MessageHandler {
         { parse_mode: 'Markdown' }
       );
     }
+  }
+
+  // ========================================
+  // Handle Template Selection
+  // ========================================
+  async handleTemplateSelection(chatId, userId, data) {
+    const templateId = data.replace('template_', '');
+
+    // Load templates data
+    const TemplatesData = require('../templates/templatesData');
+    const template = TemplatesData.getTemplateById(templateId);
+
+    if (!template) {
+      await this.bot.sendMessage(chatId, 'לא נמצאה תבנית זו.');
+      return;
+    }
+
+    // Send template info
+    await this.bot.sendMessage(chatId,
+      `📄 *${template.title}*\n\n` +
+      `${template.description}\n\n` +
+      `קטגוריה: ${template.category}`,
+      { parse_mode: 'Markdown' }
+    );
+
+    await this.sleep(500);
+
+    // Split template content into chunks if too long (Telegram limit ~4096 chars)
+    const maxLength = 4000;
+    const content = template.content;
+
+    if (content.length <= maxLength) {
+      // Send as single message
+      await this.bot.sendMessage(chatId,
+        '```markdown\n' + content + '\n```',
+        { parse_mode: 'Markdown' }
+      );
+    } else {
+      // Split into multiple messages
+      const chunks = [];
+      let currentChunk = '';
+      const lines = content.split('\n');
+
+      for (const line of lines) {
+        if ((currentChunk + line + '\n').length > maxLength) {
+          chunks.push(currentChunk);
+          currentChunk = line + '\n';
+        } else {
+          currentChunk += line + '\n';
+        }
+      }
+      if (currentChunk) chunks.push(currentChunk);
+
+      // Send each chunk
+      for (let i = 0; i < chunks.length; i++) {
+        await this.bot.sendMessage(chatId,
+          `📄 *חלק ${i + 1}/${chunks.length}*\n\n` +
+          '```markdown\n' + chunks[i] + '\n```',
+          { parse_mode: 'Markdown' }
+        );
+        await this.sleep(500);
+      }
+    }
+
+    // Send helpful message
+    await this.bot.sendMessage(chatId,
+      '💡 *איך להשתמש בתבנית:*\n\n' +
+      '1. העתק את התוכן למעלה\n' +
+      '2. הדבק בעורך טקסט או ב-/sandbox\n' +
+      '3. ערוך והתאם לצרכים שלך\n' +
+      '4. מלא את החלקים המסומנים ב-[סוגריים]\n\n' +
+      'רוצה תבנית אחרת? שלח /templates',
+      { parse_mode: 'Markdown' }
+    );
   }
 
   // ========================================
