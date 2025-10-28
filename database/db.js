@@ -4,20 +4,15 @@ const fs = require('fs');
 
 class DatabaseManager {
   constructor() {
-    // Determine data directory - use Render persistent disk or local directory
-    const dataDir = process.env.DATA_DIR || path.join(process.cwd(), 'data');
-
-    // Create data directory if it doesn't exist
-    if (!fs.existsSync(dataDir)) {
-      fs.mkdirSync(dataDir, { recursive: true });
-      console.log(`📁 Created data directory: ${dataDir}`);
+    // Create database directory if it doesn't exist
+    const dbDir = path.join(__dirname);
+    if (!fs.existsSync(dbDir)) {
+      fs.mkdirSync(dbDir, { recursive: true });
     }
 
-    // Set database path - prefer DATA_DIR for Render persistent disk
-    const dbPath = process.env.DATABASE_PATH || path.join(dataDir, 'users.db');
+    const dbPath = process.env.DATABASE_PATH || path.join(__dirname, 'users.db');
     this.db = new Database(dbPath);
-
-    console.log(`💾 Database initialized at: ${dbPath}`);
+    
     this.initializeTables();
     console.log('✅ Database tables initialized');
   }
