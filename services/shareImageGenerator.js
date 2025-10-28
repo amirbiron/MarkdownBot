@@ -80,19 +80,23 @@ class ShareImageGenerator {
   createShareHtml(data) {
     const { type, userName, achievement, level, score, details } = data;
 
-    // Choose emoji based on type
+    // Choose emoji and styling based on type
     let mainEmoji = '🎉';
     let bgGradient = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+    let accentColor = '#667eea';
 
     if (type === 'level_up') {
       mainEmoji = '🏆';
       bgGradient = 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)';
+      accentColor = '#f5576c';
     } else if (type === 'training') {
       mainEmoji = '🎯';
       bgGradient = 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)';
+      accentColor = '#00f2fe';
     } else if (type === 'lesson') {
       mainEmoji = '📚';
       bgGradient = 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)';
+      accentColor = '#38f9d7';
     }
 
     return `
@@ -187,61 +191,86 @@ class ShareImageGenerator {
 
     .achievement-box {
       background: rgba(255, 255, 255, 0.98);
-      border-radius: 30px;
-      padding: 50px;
+      border-radius: 35px;
+      padding: 55px;
       text-align: center;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      box-shadow: 0 25px 70px rgba(0, 0, 0, 0.35);
       z-index: 1;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .user-badge {
+      display: inline-block;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 8px 20px;
+      border-radius: 20px;
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 25px;
     }
 
     .main-emoji {
-      font-size: 120px;
-      margin-bottom: 20px;
+      font-size: 100px;
+      margin-bottom: 25px;
       animation: bounce 2s ease-in-out infinite;
+      filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
     }
 
     @keyframes bounce {
       0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-20px); }
+      50% { transform: translateY(-15px); }
     }
 
     .achievement-title {
-      font-size: 48px;
+      font-size: 52px;
       font-weight: 900;
-      color: #2d3748;
-      margin-bottom: 15px;
+      color: #1a202c;
+      margin-bottom: 18px;
       line-height: 1.2;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
 
     .achievement-subtitle {
-      font-size: 28px;
+      font-size: 26px;
       color: #4a5568;
-      margin-bottom: 30px;
+      margin-bottom: 35px;
       font-weight: 500;
+      padding: 0 30px;
     }
 
     .stats {
       display: flex;
       justify-content: center;
-      gap: 50px;
-      margin-top: 30px;
+      gap: 60px;
+      margin-top: 35px;
+      padding-top: 30px;
+      border-top: 2px solid #e2e8f0;
     }
 
     .stat-item {
       text-align: center;
+      position: relative;
+    }
+
+    .stat-icon {
+      font-size: 28px;
+      margin-bottom: 8px;
     }
 
     .stat-value {
-      font-size: 42px;
+      font-size: 46px;
       font-weight: 900;
-      color: #667eea;
+      color: ${accentColor};
       display: block;
+      line-height: 1;
     }
 
     .stat-label {
-      font-size: 18px;
+      font-size: 19px;
       color: #718096;
-      margin-top: 5px;
+      margin-top: 8px;
+      font-weight: 500;
     }
 
     .footer {
@@ -283,18 +312,21 @@ class ShareImageGenerator {
     </div>
 
     <div class="achievement-box">
+      <div class="user-badge">👤 ${userName}</div>
       <div class="main-emoji">${mainEmoji}</div>
       <div class="achievement-title">${achievement}</div>
       ${details ? `<div class="achievement-subtitle">${details}</div>` : ''}
 
       <div class="stats">
         <div class="stat-item">
+          <div class="stat-icon">⭐</div>
           <span class="stat-value">${level}</span>
-          <div class="stat-label">דרגה</div>
+          <div class="stat-label">דרגה נוכחית</div>
         </div>
         <div class="stat-item">
+          <div class="stat-icon">🎯</div>
           <span class="stat-value">${score}</span>
-          <div class="stat-label">ניקוד</div>
+          <div class="stat-label">נקודות</div>
         </div>
       </div>
     </div>

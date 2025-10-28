@@ -273,17 +273,24 @@ class MessageHandler {
 
       await this.sleep(2000);
 
-      // Prompt for next lesson with share button
-      await this.bot.sendMessage(chatId,
-        'מוכן/ה להמשיך? שלח /next לשיעור הבא! 🚀',
-        {
+      // Show share button only after milestone lessons (7, 12, 15)
+      const milestones = [7, 12, 15];
+      const shouldShowShare = milestones.includes(lessonId);
+
+      // Prompt for next lesson with optional share button
+      const message = 'מוכן/ה להמשיך? שלח /next לשיעור הבא! 🚀';
+
+      if (shouldShowShare) {
+        await this.bot.sendMessage(chatId, message, {
           reply_markup: {
             inline_keyboard: [
               [{ text: '🔖 שתף את ההישג', callback_data: 'share_lesson' }]
             ]
           }
-        }
-      );
+        });
+      } else {
+        await this.bot.sendMessage(chatId, message);
+      }
 
     } else {
       // Wrong answer
@@ -1050,16 +1057,19 @@ class MessageHandler {
       await this.bot.deleteMessage(chatId, loadingMsg.message_id);
 
       // Send the share image with sharing options
+      const shareMessage =
+        `🎉 ${shareData.achievement}\n\n` +
+        `לומד/ת Markdown שלב אחר שלב עם Markdown Trainer!\n` +
+        `ממליץ בחום לכל מי שרוצה לשדרג את הכתיבה הטכנית שלו 👇\n\n` +
+        `t.me/markdown_trainer_bot`;
+
       await this.bot.sendPhoto(chatId, imagePath, {
         caption:
           '🎉 *הנה התמונה שלך!*\n\n' +
           'העתק את ההודעה למטה ושתף עם החברים שלך:\n\n' +
-          '━━━━━━━━━━━━\n\n' +
-          `🎉 ${shareData.achievement}\n\n` +
-          'לומד/ת Markdown שלב אחר שלב עם Markdown Trainer!\n' +
-          'ממליץ בחום לכל מי שרוצה לשדרג את הכתיבה הטכנית שלו 👇\n\n' +
-          't.me/MarkdownTrainerBot\n\n' +
-          '━━━━━━━━━━━━',
+          '```\n' +
+          shareMessage +
+          '\n```',
         parse_mode: 'Markdown'
       });
 
