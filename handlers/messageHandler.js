@@ -70,6 +70,36 @@ class MessageHandler {
   // Handle Normal Messages (not in sandbox)
   // ========================================
   async handleNormalMessage(chatId, userId, text) {
+    // Check if message is from reply keyboard button
+    const CommandHandler = require('./commandHandler');
+    const cmdHandler = new CommandHandler(this.bot, this.db);
+
+    const msg = { chat: { id: chatId }, from: { id: userId } };
+
+    // Handle keyboard button presses
+    if (text === '📚 שיעור הבא') {
+      await cmdHandler.handleNext(msg);
+      return;
+    } else if (text === '🧪 מעבדה') {
+      await cmdHandler.handleSandbox(msg);
+      return;
+    } else if (text === '🎯 אימון') {
+      await cmdHandler.handleTrain(msg);
+      return;
+    } else if (text === '📊 התקדמות') {
+      await cmdHandler.handleProgress(msg);
+      return;
+    } else if (text === '📋 מדריך מהיר') {
+      await cmdHandler.handleCheatsheet(msg);
+      return;
+    } else if (text === '📚 תבניות') {
+      await cmdHandler.handleTemplates(msg);
+      return;
+    } else if (text === '❓ עזרה') {
+      await cmdHandler.handleHelp(msg);
+      return;
+    }
+
     // Friendly responses for common queries
     const lowerText = text.toLowerCase();
 
