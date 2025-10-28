@@ -202,6 +202,144 @@ const challenges = {
   ],
 
   // ====================================
+  // ✨ Text Formatting - עיצוב טקסט
+  // ====================================
+  'text-formatting': [
+    {
+      id: 'format_easy_1',
+      topic: 'text-formatting',
+      difficulty: 'easy',
+      question: '✨ *אתגר קל - הדגשה בסיסית*\n\nעצב את המשפט הבא כך שהמילה "חשוב" תהיה מודגשת (bold):\n"זה טקסט חשוב מאוד"',
+      validationRules: {
+        mustInclude: ['**חשוב**', 'זה טקסט'],
+        pattern: /\*\*חשוב\*\*/
+      },
+      hint: 'הדגשה נוצרת עם שתי כוכביות לפני ואחרי: **טקסט**',
+      correctFeedback: 'מצוין! ידעת להדגיש טקסט נכון.',
+      wrongFeedback: 'נסה שוב. זכור: **טקסט** להדגשה.',
+      example: 'זה טקסט **חשוב** מאוד'
+    },
+    {
+      id: 'format_easy_2',
+      topic: 'text-formatting',
+      difficulty: 'easy',
+      question: '✨ *אתגר קל - טקסט נטוי*\n\nעצב את המשפט הבא כך שהמילה "מיוחד" תהיה בנטוי (italic):\n"זה יום מיוחד"',
+      validationRules: {
+        mustInclude: ['*מיוחד*', 'זה יום'],
+        pattern: /\*מיוחד\*/
+      },
+      hint: 'נטוי נוצר עם כוכבית אחת לפני ואחרי: *טקסט*',
+      correctFeedback: 'יפה! יצרת טקסט נטוי.',
+      wrongFeedback: 'זכור: *טקסט* לנטוי (כוכבית אחת).',
+      example: 'זה יום *מיוחד*'
+    },
+    {
+      id: 'format_medium_1',
+      topic: 'text-formatting',
+      difficulty: 'medium',
+      question: '✨ *אתגר בינוני - שילוב הדגשות*\n\nעצב את המשפט הבא:\n- המילה "מאוד" - מודגשת\n- המילה "חשוב" - נטויה\n- המילה "לקרוא" - מודגשת ונטויה\n\n"זה מאוד חשוב לקרוא את המסמך"',
+      validationRules: {
+        mustInclude: ['**מאוד**', '*חשוב*', '***לקרוא***'],
+        minPatterns: 3
+      },
+      hint: 'שלוש כוכביות (***) ליצירת מודגש+נטוי',
+      correctFeedback: 'מעולה! שילבת סוגי עיצוב שונים.',
+      wrongFeedback: 'זכור: ** למודגש, * לנטוי, *** לשניהם.',
+      example: 'זה **מאוד** *חשוב* ***לקרוא*** את המסמך'
+    },
+    {
+      id: 'format_medium_2',
+      topic: 'text-formatting',
+      difficulty: 'medium',
+      question: '✨ *אתגר בינוני - קוד בתוך משפט*\n\nעצב את המשפט הבא כך שהפונקציה תוצג כקוד:\n"השתמש בפונקציה console.log להדפסה"',
+      validationRules: {
+        mustInclude: ['`console.log`', 'השתמש'],
+        pattern: /`console\.log`/
+      },
+      hint: 'קוד בתוך משפט נוצר עם backticks: `קוד`',
+      correctFeedback: 'נהדר! ידעת לעצב קוד בתוך משפט.',
+      wrongFeedback: 'זכור: `קוד` עם backticks (לא גרש רגיל).',
+      example: 'השתמש בפונקציה `console.log` להדפסה'
+    },
+    {
+      id: 'format_hard_1',
+      topic: 'text-formatting',
+      difficulty: 'hard',
+      question: '✨ *אתגר קשה - ציטוט מעוצב*\n\nצור ציטוט (blockquote) שמכיל:\n- שורה ראשונה: "זה ציטוט חשוב" (חשוב מודגש)\n- שורה שנייה: "מאת פלוני" (בנטוי)',
+      validationRules: {
+        mustInclude: ['>', '**חשוב**', '*פלוני*'],
+        hasBlockquote: true
+      },
+      hint: 'ציטוט מתחיל ב->, ואפשר להוסיף עיצוב בתוכו',
+      correctFeedback: 'מצוין! שילבת ציטוט עם עיצוב טקסט.',
+      wrongFeedback: 'זכור: > בתחילת שורה לציטוט, ואפשר להוסיף ** ו-* בתוכו.',
+      example: '> זה ציטוט **חשוב**\n> *מאת פלוני*'
+    }
+  ],
+
+  // ====================================
+  // 🐛 Bug Detection - איתור באגים
+  // ====================================
+  'bug-detection': [
+    {
+      id: 'bug_easy_1',
+      topic: 'bug-detection',
+      difficulty: 'easy',
+      question: '🐛 *אתגר קל - תיקון כותרת*\n\nמה לא בסדר בכותרת הזו?\n`#כותרת ראשית`\n\nתקן את הבעיה.',
+      validationRules: {
+        mustInclude: ['#', 'כותרת', ' '],
+        pattern: /# כותרת/
+      },
+      hint: 'כותרת צריכה רווח אחרי ה-#',
+      correctFeedback: 'נכון! חייב רווח אחרי הסימן #.',
+      wrongFeedback: 'זכור: # רווח טקסט',
+      example: '# כותרת ראשית'
+    },
+    {
+      id: 'bug_easy_2',
+      topic: 'bug-detection',
+      difficulty: 'easy',
+      question: '🐛 *אתגר קל - תיקון רשימה*\n\nמה לא בסדר ברשימה הזו?\n`-פריט ראשון\n-פריט שני`\n\nתקן את הבעיה.',
+      validationRules: {
+        mustInclude: ['- ', 'פריט ראשון'],
+        pattern: /- פריט/
+      },
+      hint: 'רשימה צריכה רווח אחרי ה--',
+      correctFeedback: 'מעולה! רשימה צריכה רווח אחרי המקף.',
+      wrongFeedback: 'זכור: - רווח טקסט',
+      example: '- פריט ראשון\n- פריט שני'
+    },
+    {
+      id: 'bug_medium_1',
+      topic: 'bug-detection',
+      difficulty: 'medium',
+      question: '🐛 *אתגר בינוני - קישור שבור*\n\nמה לא בסדר בקישור הזה?\n`[גוגל](www.google.com)`\n\nתקן את הבעיה.',
+      validationRules: {
+        mustInclude: ['[גוגל]', 'https://'],
+        pattern: /https?:\/\//
+      },
+      hint: 'כתובת URL צריכה להתחיל ב-http:// או https://',
+      correctFeedback: 'נכון! URL צריך פרוטוקול (https://).',
+      wrongFeedback: 'זכור: כתובת צריכה להתחיל ב-https://',
+      example: '[גוגל](https://www.google.com)'
+    },
+    {
+      id: 'bug_hard_1',
+      topic: 'bug-detection',
+      difficulty: 'hard',
+      question: '🐛 *אתגר קשה - טבלה שבורה*\n\nתקן את הטבלה הזו:\n```\n| שם | גיל\n|---|---|\n| יוסי | 25 |\n```',
+      validationRules: {
+        mustInclude: ['| שם |', '| גיל |', '|---|'],
+        pattern: /\| גיל \|/
+      },
+      hint: 'כל שורה בטבלה צריכה להתחיל ולהסתיים ב-|',
+      correctFeedback: 'מצוין! תיקנת את הטבלה.',
+      wrongFeedback: 'שורת הכותרות צריכה | בהתחלה ובסוף.',
+      example: '| שם | גיל |\n|---|---|\n| יוסי | 25 |'
+    }
+  ],
+
+  // ====================================
   // 📈 Mermaid - דיאגרמות
   // ====================================
   mermaid: [
@@ -272,7 +410,9 @@ function getTopicDisplayName(topic) {
     'tables': '📊 טבלאות',
     'links-images': '🔗 קישורים ותמונות',
     'advanced-lists': '📋 רשימות מתקדמות',
-    'mermaid': '📈 דיאגרמות Mermaid'
+    'mermaid': '📈 דיאגרמות Mermaid',
+    'text-formatting': '✨ עיצוב טקסט',
+    'bug-detection': '🐛 איתור באגים'
   };
   return names[topic] || topic;
 }

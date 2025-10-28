@@ -112,6 +112,13 @@ class MessageHandler {
       await this.handleCheatsheetTopic(chatId, userId, data, query.message.message_id);
     } else if (data.startsWith('copy_')) {
       await this.handleCopyExample(chatId, userId, data);
+    } else if (data.startsWith('download_')) {
+      await this.handleTemplateDownload(chatId, userId, data);
+    } else if (data === 'back_to_templates') {
+      // Re-send the templates menu
+      const CommandHandler = require('./commandHandler');
+      const cmdHandler = new CommandHandler(this.bot, this.db);
+      await cmdHandler.handleTemplates({ chat: { id: chatId }, from: { id: userId } });
     } else if (data.startsWith('template_')) {
       await this.handleTemplateSelection(chatId, userId, data);
     } else if (data.startsWith('train_topic_')) {
@@ -416,6 +423,29 @@ class MessageHandler {
   }
 
   // ========================================
+  // Handle Template Download
+  // ========================================
+  async handleTemplateDownload(chatId, userId, data) {
+    const templateId = data.replace('download_', '');
+
+    // Load templates data
+    const TemplatesData = require('../templates/templatesData');
+    const template = TemplatesData.getTemplateById(templateId);
+
+    if (!template) {
+      await this.bot.sendMessage(chatId, 'לא נמצאה תבנית זו.');
+      return;
+    }
+
+    // Send as document (file)
+    const buffer = Buffer.from(template.content, 'utf-8');
+    await this.bot.sendDocument(chatId, buffer, {
+      filename: `${templateId}_template.md`,
+      caption: `📄 ${template.title}\n\n💡 הורד את הקובץ, ערוך אותו בעורך טקסט, והתאם לצרכים שלך!`
+    });
+  }
+
+  // ========================================
   // Handle Template Selection
   // ========================================
   async handleTemplateSelection(chatId, userId, data) {
@@ -430,63 +460,96 @@ class MessageHandler {
       return;
     }
 
-    // Send template info
-    await this.bot.sendMessage(chatId,
-      `📄 *${template.title}*\n\n` +
-      `${template.description}\n\n` +
-      `קטגוריה: ${template.category}`,
-      { parse_mode: 'Markdown' }
-    );
+    // For templates that are too long for Telegram display (Blog Post, One-Pager, API Reference, README)
+    // Send them as downloadable files directly
+    const downloadOnlyTemplates = ['blog', 'onepager', 'api', 'readme'];
 
-    await this.sleep(500);
-
-    // Split template content into chunks if too long (Telegram limit ~4096 chars)
-    const maxLength = 4000;
-    const content = template.content;
-
-    if (content.length <= maxLength) {
-      // Send as single message
+    if (downloadOnlyTemplates.includes(templateId)) {
+      // Send template as downloadable file
       await this.bot.sendMessage(chatId,
-        '```markdown\n' + content + '\n```',
+        `📄 *${template.title}*\n\n` +
+        `${template.description}\n\n` +
+        `קטגוריה: ${template.category}\n\n` +
+        `מוריד את התבנית כקובץ...`,
         { parse_mode: 'Markdown' }
       );
+
+      await this.sleep(500);
+
+      // Send as document (file)
+      const buffer = Buffer.from(template.content, 'utf-8');
+      await this.bot.sendDocument(chatId, buffer, {
+        filename: `${templateId}_template.md`,
+        caption: '💡 הורד את הקובץ, ערוך אותו בעורך טקסט, והתאם לצרכים שלך!'
+      });
+
     } else {
-      // Split into multiple messages
-      const chunks = [];
-      let currentChunk = '';
-      const lines = content.split('\n');
+      // For other templates, send as text with option to download
+      await this.bot.sendMessage(chatId,
+        `📄 *${template.title}*\n\n` +
+        `${template.description}\n\n` +
+        `קטגוריה: ${template.category}`,
+        { parse_mode: 'Markdown' }
+      );
 
-      for (const line of lines) {
-        if ((currentChunk + line + '\n').length > maxLength) {
-          chunks.push(currentChunk);
-          currentChunk = line + '\n';
-        } else {
-          currentChunk += line + '\n';
-        }
-      }
-      if (currentChunk) chunks.push(currentChunk);
+      await this.sleep(500);
 
-      // Send each chunk
-      for (let i = 0; i < chunks.length; i++) {
+      // Split template content into chunks if too long (Telegram limit ~4096 chars)
+      const maxLength = 4000;
+      const content = template.content;
+
+      if (content.length <= maxLength) {
+        // Send as single message
         await this.bot.sendMessage(chatId,
-          `📄 *חלק ${i + 1}/${chunks.length}*\n\n` +
-          '```markdown\n' + chunks[i] + '\n```',
+          '```markdown\n' + content + '\n```',
           { parse_mode: 'Markdown' }
         );
-        await this.sleep(500);
-      }
-    }
+      } else {
+        // Split into multiple messages
+        const chunks = [];
+        let currentChunk = '';
+        const lines = content.split('\n');
 
-    // Send helpful message
-    await this.bot.sendMessage(chatId,
-      '💡 *איך להשתמש בתבנית:*\n\n' +
-      '1. העתק את התוכן למעלה\n' +
-      '2. הדבק בעורך טקסט או ב-/sandbox\n' +
-      '3. ערוך והתאם לצרכים שלך\n' +
-      '4. מלא את החלקים המסומנים ב-[סוגריים]\n\n' +
-      'רוצה תבנית אחרת? שלח /templates',
-      { parse_mode: 'Markdown' }
-    );
+        for (const line of lines) {
+          if ((currentChunk + line + '\n').length > maxLength) {
+            chunks.push(currentChunk);
+            currentChunk = line + '\n';
+          } else {
+            currentChunk += line + '\n';
+          }
+        }
+        if (currentChunk) chunks.push(currentChunk);
+
+        // Send each chunk
+        for (let i = 0; i < chunks.length; i++) {
+          await this.bot.sendMessage(chatId,
+            `📄 *חלק ${i + 1}/${chunks.length}*\n\n` +
+            '```markdown\n' + chunks[i] + '\n```',
+            { parse_mode: 'Markdown' }
+          );
+          await this.sleep(500);
+        }
+      }
+
+      // Send helpful message with download option
+      await this.bot.sendMessage(chatId,
+        '💡 *איך להשתמש בתבנית:*\n\n' +
+        '1. העתק את התוכן למעלה\n' +
+        '2. הדבק בעורך טקסט או ב-/sandbox\n' +
+        '3. ערוך והתאם לצרכים שלך\n' +
+        '4. מלא את החלקים המסומנים ב-[סוגריים]\n\n' +
+        'רוצה תבנית אחרת? שלח /templates',
+        {
+          parse_mode: 'Markdown',
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: '⬇️ הורד כקובץ', callback_data: `download_${templateId}` }],
+              [{ text: '◀️ חזרה לתבניות', callback_data: 'back_to_templates' }]
+            ]
+          }
+        }
+      );
+    }
   }
 
   // ========================================

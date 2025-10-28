@@ -55,23 +55,7 @@ class CommandHandler {
       `אני הבוט שילמד אותך צעד אחר צעד איך לכתוב טקסטים יפים, מסודרים ומקצועיים באמצעות Markdown.\n\n` +
       `מה זה Markdown?\n` +
       `זו שפת סימון פשוטה שמאפשרת לך לעצב טקסט (כמו כותרות, רשימות והדגשות) באמצעות תווים פשוטים, בלי להסתבך עם תפריטים ועכבר.\n\n` +
-      `כל יום אשלח לך טיפ קצר או אתגר קטן. מוכנ/ה להתחיל?`
-    );
-
-    await this.sleep(2000);
-
-    // Message 2: Learning pace selection
-    await this.bot.sendMessage(chatId,
-      `👋 לפני שנתחיל, איך אתה רוצה ללמוד?`,
-      {
-        reply_markup: {
-          inline_keyboard: [
-            [{ text: '🐌 קצב רגוע (שיעור אחד ביום)', callback_data: 'pace_slow' }],
-            [{ text: '🚶 קצב רגיל (2-3 ביום)', callback_data: 'pace_normal' }],
-            [{ text: '🏃 קצב מהיר (כמה שרוצה)', callback_data: 'pace_fast' }]
-          ]
-        }
-      }
+      `מוכנ/ה להתחיל? שלח /next לשיעור הראשון! 🚀`
     );
   }
 
@@ -84,7 +68,8 @@ class CommandHandler {
 
     this.db.updateLastActive(userId);
 
-    const helpText = `📚 *עזרה - Markdown Trainer Bot*\n\n` +
+    const helpText =
+      `📚 *עזרה - Markdown Trainer Bot*\n\n` +
       `*פקודות זמינות:*\n\n` +
       `🎓 *למידה:*\n` +
       `/start - התחל מחדש\n` +
@@ -105,7 +90,13 @@ class CommandHandler {
       `• תרגל כל יום כדי לשפר את הכישורים שלך\n\n` +
       `שאלות? צור קשר עם היוצר: @amirbiron`;
 
-    await this.bot.sendMessage(chatId, helpText, { parse_mode: 'Markdown' });
+    try {
+      await this.bot.sendMessage(chatId, helpText, { parse_mode: 'Markdown' });
+    } catch (error) {
+      console.error('Error sending help message:', error);
+      // Try without markdown parsing if it fails
+      await this.bot.sendMessage(chatId, helpText.replace(/\*/g, ''));
+    }
   }
 
   // ========================================
@@ -407,9 +398,11 @@ class CommandHandler {
         parse_mode: 'Markdown',
         reply_markup: {
           inline_keyboard: [
+            [{ text: '✨ עיצוב טקסט', callback_data: 'train_topic_text-formatting' }],
             [{ text: '📊 טבלאות', callback_data: 'train_topic_tables' }],
             [{ text: '🔗 קישורים ותמונות', callback_data: 'train_topic_links-images' }],
             [{ text: '📋 רשימות מתקדמות', callback_data: 'train_topic_advanced-lists' }],
+            [{ text: '🐛 איתור באגים', callback_data: 'train_topic_bug-detection' }],
             [{ text: '📈 דיאגרמות Mermaid', callback_data: 'train_topic_mermaid' }]
           ]
         }
