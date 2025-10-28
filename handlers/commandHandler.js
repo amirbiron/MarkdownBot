@@ -90,16 +90,19 @@ class CommandHandler {
       `/start - התחל מחדש\n` +
       `/next - עבור לשיעור הבא\n` +
       `/progress - הצג את ההתקדמות שלך\n\n` +
+      `🎯 *אימון ממוקד:*\n` +
+      `/train - התחל אימון בנושא ספציפי\n` +
+      `/cancel_training - בטל אימון פעיל\n\n` +
       `🛠️ *כלים:*\n` +
       `/sandbox - פתח מעבדת תרגול (Markdown → תמונה)\n` +
       `/templates - תבניות Markdown מוכנות לשימוש\n` +
       `/cheatsheet - הצג מדריך מהיר\n` +
       `/exit - צא ממצב מעבדה\n\n` +
       `💡 *טיפים:*\n` +
+      `• השתמש באימון ממוקד (/train) לתרגל נושאים ספציפיים\n` +
       `• השתמש במעבדה (/sandbox) כדי לראות איך הקוד שלך נראה\n` +
       `• השתמש בתבניות (/templates) לקבלת נקודת פתיחה מקצועית\n` +
-      `• תרגל כל יום כדי לשפר את הכישורים שלך\n` +
-      `• אם תקעת, תמיד אפשר לחזור על שיעורים קודמים\n\n` +
+      `• תרגל כל יום כדי לשפר את הכישורים שלך\n\n` +
       `שאלות? צור קשר עם היוצר: @amirbiron`;
 
     await this.bot.sendMessage(chatId, helpText, { parse_mode: 'Markdown' });
@@ -374,6 +377,79 @@ class CommandHandler {
         }
       });
     }
+  }
+
+  // ========================================
+  // /train - Start focused training mode
+  // ========================================
+  async handleTrain(msg) {
+    const chatId = msg.chat.id;
+    const userId = msg.from.id;
+
+    this.db.updateLastActive(userId);
+
+    // Check if user already in training mode
+    const currentMode = this.db.getUserMode(userId);
+    if (currentMode.current_mode === 'training') {
+      await this.bot.sendMessage(chatId,
+        '⚠️ אתה כבר באמצע אימון!\n\n' +
+        'סיים את האימון הנוכחי או שלח /cancel_training לביטול.'
+      );
+      return;
+    }
+
+    // Show topic selection
+    await this.bot.sendMessage(chatId,
+      '🎯 *מצב אימון ממוקד*\n\n' +
+      'בחר נושא שתרצה לתרגל:\n' +
+      'תקבל 3-5 אתגרים ברמות קושי הולכות וגדלות עם משוב מיידי.',
+      {
+        parse_mode: 'Markdown',
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: '📊 טבלאות', callback_data: 'train_topic_tables' }],
+            [{ text: '🔗 קישורים ותמונות', callback_data: 'train_topic_links-images' }],
+            [{ text: '📋 רשימות מתקדמות', callback_data: 'train_topic_advanced-lists' }],
+            [{ text: '📈 דיאגרמות Mermaid', callback_data: 'train_topic_mermaid' }]
+          ]
+        }
+      }
+    );
+  }
+
+  // ========================================
+  // /cancel_training - Cancel current training session
+  // ========================================
+  async handleCancelTraining(msg) {
+    const chatId = msg.chat.id;
+    const userId = msg.from.id;
+
+    this.db.updateLastActive(userId);
+
+    const mode = this.db.getUserMode(userId);
+
+    if (mode.current_mode !== 'training') {
+      await this.bot.sendMessage(chatId,
+        'אתה לא באימון כרגע.\n\n' +
+        'כדי להתחיל אימון, שלח /train'
+      );
+      return;
+    }
+
+    // Get training session and cancel it
+    const session = this.db.getActiveTrainingSession(userId);
+    if (session) {
+      this.db.cancelTrainingSession(session.id);
+    }
+
+    // Clear user mode
+    this.db.clearUserMode(userId);
+
+    await this.bot.sendMessage(chatId,
+      '✅ האימון בוטל בהצלחה.\n\n' +
+      'אפשר להתחיל אימון חדש עם /train\n' +
+      'או להמשיך בשיעורים עם /next'
+    );
   }
 
   // ========================================

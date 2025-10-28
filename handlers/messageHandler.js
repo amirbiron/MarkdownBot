@@ -25,6 +25,9 @@ class MessageHandler {
     if (mode.current_mode === 'sandbox') {
       // User is in sandbox mode - render their markdown
       await this.handleSandboxInput(chatId, userId, text);
+    } else if (mode.current_mode === 'training') {
+      // User is in training mode - validate their answer
+      await this.handleTrainingAnswer(chatId, userId, text, mode);
     } else {
       // Normal conversation mode
       await this.handleNormalMessage(chatId, userId, text);
@@ -111,6 +114,14 @@ class MessageHandler {
       await this.handleCopyExample(chatId, userId, data);
     } else if (data.startsWith('template_')) {
       await this.handleTemplateSelection(chatId, userId, data);
+    } else if (data.startsWith('train_topic_')) {
+      await this.handleTrainingTopicSelection(chatId, userId, data, messageId);
+    } else if (data === 'train_hint') {
+      await this.handleTrainingHint(chatId, userId);
+    } else if (data === 'train_skip') {
+      await this.handleTrainingSkip(chatId, userId);
+    } else if (data === 'train_exit') {
+      await this.handleTrainingExit(chatId, userId);
     }
   }
 
@@ -535,6 +546,292 @@ class MessageHandler {
         }
       });
     }
+  }
+
+  // ========================================
+  // Training Mode Handlers
+  // ========================================
+
+  async handleTrainingTopicSelection(chatId, userId, data, messageId) {
+    const topic = data.replace('train_topic_', '');
+
+    // Load training data
+    const TrainingData = require('../training/trainingData');
+    const challenges = TrainingData.getChallengesByTopic(topic);
+
+    if (!challenges || challenges.length === 0) {
+      await this.bot.sendMessage(chatId, 'לא נמצאו אתגרים לנושא זה.');
+      return;
+    }
+
+    // Remove the keyboard
+    await this.bot.editMessageReplyMarkup(
+      { inline_keyboard: [] },
+      { chat_id: chatId, message_id: messageId }
+    );
+
+    // Create training session in DB
+    const sessionId = this.db.createTrainingSession(userId, topic);
+
+    // Set user to training mode with session data
+    const modeData = JSON.stringify({
+      sessionId,
+      topic,
+      currentChallengeIndex: 0,
+      challengesCompleted: 0,
+      challengesCorrect: 0,
+      totalChallenges: Math.min(challenges.length, 5) // Maximum 5 challenges
+    });
+
+    this.db.setUserMode(userId, 'training', modeData);
+
+    // Send welcome message
+    const topicName = TrainingData.getTopicDisplayName(topic);
+    await this.bot.sendMessage(chatId,
+      `🎯 *אימון ממוקד: ${topicName}*\n\n` +
+      `תקבל ${Math.min(challenges.length, 5)} אתגרים ברמות קושי הולכות וגדלות.\n\n` +
+      `💡 אפשר לבקש רמז, לדלג או לצאת בכל שלב.\n\n` +
+      `בואו נתחיל! 🚀`,
+      { parse_mode: 'Markdown' }
+    );
+
+    await this.sleep(1500);
+
+    // Send first challenge
+    await this.sendTrainingChallenge(chatId, userId, challenges[0]);
+  }
+
+  async handleTrainingAnswer(chatId, userId, text, mode) {
+    try {
+      const modeData = JSON.parse(mode.mode_data);
+      const TrainingData = require('../training/trainingData');
+      const challenges = TrainingData.getChallengesByTopic(modeData.topic);
+
+      const currentChallenge = challenges[modeData.currentChallengeIndex];
+
+      // Validate answer
+      const validation = TrainingData.validateAnswer(currentChallenge, text);
+
+      if (validation.isCorrect) {
+        // Correct answer!
+        modeData.challengesCorrect++;
+        modeData.challengesCompleted++;
+
+        // Update database
+        this.db.updateTrainingProgress(
+          modeData.sessionId,
+          modeData.challengesCompleted,
+          modeData.challengesCorrect
+        );
+
+        // Update topic performance
+        this.db.updateTopicPerformance(userId, modeData.topic, true);
+
+        await this.bot.sendMessage(chatId,
+          `✅ *${currentChallenge.correctFeedback}*\n\n` +
+          `📈 התקדמות: ${modeData.challengesCompleted}/${modeData.totalChallenges}`,
+          { parse_mode: 'Markdown' }
+        );
+
+        await this.sleep(2000);
+
+        // Check if training completed
+        if (modeData.challengesCompleted >= modeData.totalChallenges) {
+          await this.completeTraining(chatId, userId, modeData);
+        } else {
+          // Move to next challenge
+          modeData.currentChallengeIndex++;
+          this.db.setUserMode(userId, 'training', JSON.stringify(modeData));
+
+          await this.sendTrainingChallenge(chatId, userId, challenges[modeData.currentChallengeIndex]);
+        }
+
+      } else {
+        // Wrong answer
+        modeData.challengesCompleted++;
+
+        // Update database
+        this.db.updateTrainingProgress(
+          modeData.sessionId,
+          modeData.challengesCompleted,
+          modeData.challengesCorrect
+        );
+
+        // Update topic performance
+        this.db.updateTopicPerformance(userId, modeData.topic, false);
+
+        await this.bot.sendMessage(chatId,
+          `❌ *${currentChallenge.wrongFeedback}*\n\n` +
+          `${validation.reason ? '🔍 ' + validation.reason + '\n\n' : ''}` +
+          `💡 רוצה לנסות שוב? שלח תשובה חדשה.\n` +
+          `או לחץ על "רמז" לעזרה.`,
+          {
+            parse_mode: 'Markdown',
+            reply_markup: {
+              inline_keyboard: [
+                [
+                  { text: '💡 רמז', callback_data: 'train_hint' },
+                  { text: '⏭️ דלג', callback_data: 'train_skip' }
+                ],
+                [
+                  { text: '❌ צא מהאימון', callback_data: 'train_exit' }
+                ]
+              ]
+            }
+          }
+        );
+      }
+
+    } catch (error) {
+      console.error('Error handling training answer:', error);
+      await this.bot.sendMessage(chatId,
+        '❌ שגיאה בבדיקת התשובה. נסה שוב או שלח /cancel_training לצאת.'
+      );
+    }
+  }
+
+  async sendTrainingChallenge(chatId, userId, challenge) {
+    await this.bot.sendMessage(chatId,
+      `🎯 *אתגר ${challenge.difficulty === 'easy' ? 'קל' : challenge.difficulty === 'medium' ? 'בינוני' : challenge.difficulty === 'hard' ? 'קשה' : 'מאתגר'}*\n\n` +
+      challenge.question,
+      {
+        parse_mode: 'Markdown',
+        reply_markup: {
+          inline_keyboard: [
+            [
+              { text: '💡 רמז', callback_data: 'train_hint' },
+              { text: '⏭️ דלג', callback_data: 'train_skip' }
+            ],
+            [
+              { text: '❌ צא מהאימון', callback_data: 'train_exit' }
+            ]
+          ]
+        }
+      }
+    );
+  }
+
+  async handleTrainingHint(chatId, userId) {
+    const mode = this.db.getUserMode(userId);
+
+    if (mode.current_mode !== 'training') return;
+
+    try {
+      const modeData = JSON.parse(mode.mode_data);
+      const TrainingData = require('../training/trainingData');
+      const challenges = TrainingData.getChallengesByTopic(modeData.topic);
+      const currentChallenge = challenges[modeData.currentChallengeIndex];
+
+      await this.bot.sendMessage(chatId,
+        `💡 *רמז:*\n${currentChallenge.hint}\n\n` +
+        `*דוגמה:*\n\`\`\`\n${currentChallenge.example}\n\`\`\``,
+        { parse_mode: 'Markdown' }
+      );
+    } catch (error) {
+      console.error('Error showing hint:', error);
+    }
+  }
+
+  async handleTrainingSkip(chatId, userId) {
+    const mode = this.db.getUserMode(userId);
+
+    if (mode.current_mode !== 'training') return;
+
+    try {
+      const modeData = JSON.parse(mode.mode_data);
+      modeData.challengesCompleted++;
+
+      // Update database
+      this.db.updateTrainingProgress(
+        modeData.sessionId,
+        modeData.challengesCompleted,
+        modeData.challengesCorrect
+      );
+
+      await this.bot.sendMessage(chatId,
+        `⏭️ דילגת על האתגר.\n\n` +
+        `📈 התקדמות: ${modeData.challengesCompleted}/${modeData.totalChallenges}`
+      );
+
+      await this.sleep(1500);
+
+      // Check if training completed
+      if (modeData.challengesCompleted >= modeData.totalChallenges) {
+        await this.completeTraining(chatId, userId, modeData);
+      } else {
+        // Move to next challenge
+        const TrainingData = require('../training/trainingData');
+        const challenges = TrainingData.getChallengesByTopic(modeData.topic);
+
+        modeData.currentChallengeIndex++;
+        this.db.setUserMode(userId, 'training', JSON.stringify(modeData));
+
+        await this.sendTrainingChallenge(chatId, userId, challenges[modeData.currentChallengeIndex]);
+      }
+    } catch (error) {
+      console.error('Error skipping challenge:', error);
+    }
+  }
+
+  async handleTrainingExit(chatId, userId) {
+    const mode = this.db.getUserMode(userId);
+
+    if (mode.current_mode !== 'training') return;
+
+    try {
+      const modeData = JSON.parse(mode.mode_data);
+
+      // Cancel session
+      this.db.cancelTrainingSession(modeData.sessionId);
+      this.db.clearUserMode(userId);
+
+      await this.bot.sendMessage(chatId,
+        '❌ האימון בוטל.\n\n' +
+        'אפשר להתחיל אימון חדש עם /train'
+      );
+    } catch (error) {
+      console.error('Error exiting training:', error);
+    }
+  }
+
+  async completeTraining(chatId, userId, modeData) {
+    // Complete session in database
+    this.db.completeTrainingSession(modeData.sessionId);
+    this.db.clearUserMode(userId);
+
+    const TrainingData = require('../training/trainingData');
+    const topicName = TrainingData.getTopicDisplayName(modeData.topic);
+    const successRate = ((modeData.challengesCorrect / modeData.totalChallenges) * 100).toFixed(0);
+
+    let emoji = '🎉';
+    let message = 'כל הכבוד!';
+
+    if (successRate >= 80) {
+      emoji = '🏆';
+      message = 'מצוין! ביצועים מרשימים!';
+    } else if (successRate >= 60) {
+      emoji = '⭐';
+      message = 'יפה מאוד!';
+    } else if (successRate >= 40) {
+      emoji = '👍';
+      message = 'התחלה טובה!';
+    } else {
+      emoji = '💪';
+      message = 'המשך להתאמן!';
+    }
+
+    await this.bot.sendMessage(chatId,
+      `${emoji} *סיימת את האימון!* ${emoji}\n\n` +
+      `*${message}*\n\n` +
+      `📊 *תוצאות האימון ב${topicName}:*\n` +
+      `✅ תשובות נכונות: ${modeData.challengesCorrect}/${modeData.totalChallenges}\n` +
+      `📈 אחוז הצלחה: ${successRate}%\n\n` +
+      `מה הלאה?\n` +
+      `🎯 /train - אימון נוסף בנושא אחר\n` +
+      `📚 /next - המשך בשיעורים\n` +
+      `📊 /progress - הצג התקדמות כללית`,
+      { parse_mode: 'Markdown' }
+    );
   }
 
   // ========================================
