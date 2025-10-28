@@ -54,6 +54,12 @@ class ShareImageGenerator {
 
       await page.setContent(html, { waitUntil: 'networkidle0' });
 
+      // Wait for fonts to load properly
+      await page.evaluateHandle('document.fonts.ready');
+
+      // Additional wait to ensure rendering is complete
+      await page.waitForTimeout(1000);
+
       await page.screenshot({
         path: outputPath,
         type: 'png',
@@ -114,7 +120,7 @@ class ShareImageGenerator {
     }
 
     body {
-      font-family: 'Heebo', sans-serif;
+      font-family: 'Heebo', 'Arial Hebrew', 'Arial', 'Tahoma', sans-serif;
       width: 1200px;
       height: 630px;
       background: ${bgGradient};
@@ -122,6 +128,8 @@ class ShareImageGenerator {
       align-items: center;
       justify-content: center;
       overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
 
     .container {

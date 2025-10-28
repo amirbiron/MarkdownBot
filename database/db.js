@@ -163,9 +163,9 @@ class DatabaseManager {
       INSERT OR IGNORE INTO users (user_id, username, first_name, last_name, language_code)
       VALUES (?, ?, ?, ?, ?)
     `);
-    
+
     const result = stmt.run(userId, username, firstName, lastName, languageCode);
-    
+
     // Also create progress record
     if (result.changes > 0) {
       const progressStmt = this.db.prepare(`
@@ -173,8 +173,11 @@ class DatabaseManager {
         VALUES (?)
       `);
       progressStmt.run(userId);
+      console.log(`👤 Created new user ${userId} (${firstName}) with initial progress (current_lesson: 0)`);
+    } else {
+      console.log(`ℹ️ User ${userId} already exists, skipping creation`);
     }
-    
+
     return result.changes > 0;
   }
 
@@ -198,12 +201,18 @@ class DatabaseManager {
 
   updateCurrentLesson(userId, lessonId) {
     const stmt = this.db.prepare(`
-      UPDATE user_progress 
+      UPDATE user_progress
       SET current_lesson = ?,
           last_lesson_date = CURRENT_TIMESTAMP
       WHERE user_id = ?
     `);
-    stmt.run(lessonId, userId);
+    const result = stmt.run(lessonId, userId);
+    console.log(`📚 Updated user ${userId} current lesson to ${lessonId} (affected rows: ${result.changes})`);
+
+    // Verify the update
+    const verify = this.db.prepare('SELECT current_lesson FROM user_progress WHERE user_id = ?');
+    const current = verify.get(userId);
+    console.log(`✅ Verified: User ${userId} current lesson is now ${current?.current_lesson}`);
   }
 
   incrementScore(userId, points) {

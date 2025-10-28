@@ -405,23 +405,37 @@ class CommandHandler {
   // Helper: Send lesson to user
   // ========================================
   async sendLesson(chatId, userId, lesson) {
-    // Send lesson messages
-    for (const message of lesson.messages) {
-      await this.bot.sendMessage(chatId, message, { parse_mode: 'Markdown' });
-      await this.sleep(1500);
-    }
+    try {
+      // Send lesson messages
+      for (let i = 0; i < lesson.messages.length; i++) {
+        const message = lesson.messages[i];
+        console.log(`Sending lesson ${lesson.id} message ${i+1}/${lesson.messages.length} to user ${userId}`);
+        await this.bot.sendMessage(chatId, message, { parse_mode: 'Markdown' });
+        await this.sleep(1500);
+      }
 
-    // Send quiz if exists
-    if (lesson.quiz) {
-      await this.sleep(1000);
-      await this.bot.sendMessage(chatId, lesson.quiz.question, {
-        parse_mode: 'Markdown',
-        reply_markup: {
-          inline_keyboard: lesson.quiz.options.map((option, index) => [
-            { text: option.text, callback_data: `answer_${lesson.id}_${index}` }
-          ])
-        }
-      });
+      // Send quiz if exists
+      if (lesson.quiz) {
+        console.log(`Sending lesson ${lesson.id} quiz to user ${userId}`);
+        await this.sleep(1000);
+        await this.bot.sendMessage(chatId, lesson.quiz.question, {
+          parse_mode: 'Markdown',
+          reply_markup: {
+            inline_keyboard: lesson.quiz.options.map((option, index) => [
+              { text: option.text, callback_data: `answer_${lesson.id}_${index}` }
+            ])
+          }
+        });
+        console.log(`✅ Lesson ${lesson.id} sent successfully to user ${userId}`);
+      } else {
+        console.log(`ℹ️ Lesson ${lesson.id} has no quiz (tip lesson)`);
+      }
+    } catch (error) {
+      console.error(`❌ Error sending lesson ${lesson.id} to user ${userId}:`, error);
+      await this.bot.sendMessage(chatId,
+        '❌ אופס! משהו השתבש בשליחת השיעור.\n\n' +
+        'נסה שוב עם /next או שלח /help לעזרה.'
+      );
     }
   }
 
