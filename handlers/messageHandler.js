@@ -1506,12 +1506,12 @@ class MessageHandler {
 
     for (const adminId of admins) {
       try {
-        await this.bot.sendMessage(adminId,
+        await this.safeSendMarkdown(
+          adminId,
           `🆕 *תבנית חדשה נשלחה לאישור*\n\n` +
           `כותרת: ${title}\n` +
           `מאת: משתמש ${userId}\n\n` +
-          `שלח /review_templates לבדיקה`,
-          { parse_mode: 'Markdown' }
+          `שלח /review_templates לבדיקה`
         );
       } catch (error) {
         console.log(`Could not notify admin ${adminId}:`, error.message);
@@ -1531,15 +1531,15 @@ class MessageHandler {
     const authorName = submission.first_name || submission.username || `משתמש ${submission.user_id}`;
 
     // Send submission details
-    await this.bot.sendMessage(chatId,
+    await this.safeSendMarkdown(
+      chatId,
       `📋 *סקירת תבנית*\n\n` +
       `*כותרת:* ${submission.title}\n` +
       `*קטגוריה:* ${submission.category}\n` +
       `*תיאור:* ${submission.description}\n` +
       `*מאת:* ${authorName}\n` +
       `*תאריך:* ${new Date(submission.submitted_at).toLocaleDateString('he-IL')}\n\n` +
-      `התוכן יישלח בהודעה הבאה...`,
-      { parse_mode: 'Markdown' }
+      `התוכן יישלח בהודעה הבאה...`
     );
 
     await this.sleep(500);
@@ -1547,9 +1547,9 @@ class MessageHandler {
     // Send content
     const content = submission.content;
     if (content.length <= 4000) {
-      await this.bot.sendMessage(chatId,
-        '```markdown\n' + content + '\n```',
-        { parse_mode: 'Markdown' }
+      await this.safeSendMarkdown(
+        chatId,
+        '```markdown\n' + content + '\n```'
       );
     } else {
       // Split into chunks
@@ -1568,10 +1568,10 @@ class MessageHandler {
       if (currentChunk) chunks.push(currentChunk);
 
       for (let i = 0; i < chunks.length; i++) {
-        await this.bot.sendMessage(chatId,
+        await this.safeSendMarkdown(
+          chatId,
           `*חלק ${i + 1}/${chunks.length}*\n\n` +
-          '```markdown\n' + chunks[i] + '\n```',
-          { parse_mode: 'Markdown' }
+          '```markdown\n' + chunks[i] + '\n```'
         );
         await this.sleep(500);
       }
@@ -1580,20 +1580,16 @@ class MessageHandler {
     await this.sleep(500);
 
     // Send approval/rejection buttons
-    await this.bot.sendMessage(chatId,
-      `*מה תרצה לעשות?*`,
-      {
-        parse_mode: 'Markdown',
-        reply_markup: {
-          inline_keyboard: [
-            [
-              { text: '✅ אשר תבנית', callback_data: `approve_sub_${submissionId}` },
-              { text: '❌ דחה תבנית', callback_data: `reject_sub_${submissionId}` }
-            ]
+    await this.safeSendMarkdown(chatId, `*מה תרצה לעשות?*`, {
+      reply_markup: {
+        inline_keyboard: [
+          [
+            { text: '✅ אשר תבנית', callback_data: `approve_sub_${submissionId}` },
+            { text: '❌ דחה תבנית', callback_data: `reject_sub_${submissionId}` }
           ]
-        }
+        ]
       }
-    );
+    });
   }
 
   async handleApproveSubmission(chatId, userId, data, messageId) {
@@ -1619,20 +1615,20 @@ class MessageHandler {
         // Ignore if message is too old
       }
 
-      await this.bot.sendMessage(chatId,
-        `✅ *התבנית אושרה!*\n\n` +
-        `התבנית "${submission.title}" עכשיו זמינה לכל המשתמשים בספרייה הקהילתית!`,
-        { parse_mode: 'Markdown' }
-      );
+    await this.safeSendMarkdown(
+      chatId,
+      `✅ *התבנית אושרה!*\n\n` +
+      `התבנית "${submission.title}" עכשיו זמינה לכל המשתמשים בספרייה הקהילתית!`
+    );
 
       // Notify the author
       try {
-        await this.bot.sendMessage(submission.user_id,
+        await this.safeSendMarkdown(
+          submission.user_id,
           `🎉 *מזל טוב!*\n\n` +
           `התבנית שלך "${submission.title}" אושרה!\n\n` +
           `היא עכשיו זמינה לכל המשתמשים ב-/templates\n\n` +
-          `תודה על התרומה לקהילה! 💚`,
-          { parse_mode: 'Markdown' }
+          `תודה על התרומה לקהילה! 💚`
         );
       } catch (error) {
         console.log(`Could not notify author ${submission.user_id}:`, error.message);
@@ -1699,21 +1695,21 @@ class MessageHandler {
         }
       }
 
-      await this.bot.sendMessage(chatId,
-        `❌ *התבנית נדחתה*\n\n` +
-        `התבנית "${submission.title}" נדחתה.\n` +
-        (reason ? `סיבה: ${reason}` : ''),
-        { parse_mode: 'Markdown' }
-      );
+    await this.safeSendMarkdown(
+      chatId,
+      `❌ *התבנית נדחתה*\n\n` +
+      `התבנית "${submission.title}" נדחתה.\n` +
+      (reason ? `סיבה: ${reason}` : '')
+    );
 
       // Notify the author
       try {
-        await this.bot.sendMessage(submission.user_id,
+        await this.safeSendMarkdown(
+          submission.user_id,
           `😞 *התבנית שלך נדחתה*\n\n` +
           `התבנית "${submission.title}" לא אושרה להוספה לספרייה.\n\n` +
           (reason ? `*סיבה:* ${reason}\n\n` : '') +
-          `אל תיואש! תוכל לשפר ולשלוח שוב עם /submit_template`,
-          { parse_mode: 'Markdown' }
+          `אל תיואש! תוכל לשפר ולשלוח שוב עם /submit_template`
         );
       } catch (error) {
         console.log(`Could not notify author ${submission.user_id}:`, error.message);
