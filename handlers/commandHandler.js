@@ -456,7 +456,7 @@ Markdown רגיל בטלגרם לא מספיק\\. ה\\-Bot API משתמש ב\\-*
 _ * [ ] ( ) ~ \` > # + - = | { } . !
 \`\`\`
 
-כלומר: כששולחים טקסט מהבוט → כל תו כזה צריך \`\\\\\`\\.
+כלומר: כששולחים טקסט מהבוט → כל תו כזה צריך \`\\\`\\.
 
 ━━━━━━━━━━━━━━━━━━━━
 
@@ -538,7 +538,7 @@ print("hello world")
 
 פונקציה ש\\-escape את כל מה שצריך לפני שליחה:
 
-\`\`\`python
+\`\`\`
 def escape_markdown_v2(text: str) -> str:
     specials = r"_*[]()~\`>#+-=|{}.!"
     for ch in specials:
@@ -548,7 +548,7 @@ def escape_markdown_v2(text: str) -> str:
 
 שימוש:
 
-\`\`\`python
+\`\`\`
 safe_text = escape_markdown_v2("קישור - לחץ כאן. (הערה)")
 await update.message.reply_text(safe_text, parse_mode="MarkdownV2")
 \`\`\`
@@ -1022,6 +1022,21 @@ await update.message.reply_text(msg, parse_mode="MarkdownV2")
 
     this.db.updateLastActive(userId);
 
+    // Ensure user exists (in case user didn't run /start yet)
+    try {
+      const existing = this.db.getUser(userId);
+      if (!existing) {
+        const username = msg.from.username || '';
+        const firstName = msg.from.first_name || '';
+        const lastName = msg.from.last_name || '';
+        const languageCode = msg.from.language_code || 'he';
+        this.db.createUser(userId, username, firstName, lastName, languageCode);
+      }
+    } catch (e) {
+      // Continue even if creation fails; downstream flows still work without strict FKs
+      console.warn('Could not ensure user exists before /submit_template:', e && e.message);
+    }
+
     // Check if user is already submitting a template
     const mode = this.db.getUserMode(userId);
     if (mode.current_mode === 'submitting_template') {
@@ -1035,14 +1050,13 @@ await update.message.reply_text(msg, parse_mode="MarkdownV2")
     // Start template submission flow
     this.db.setUserMode(userId, 'submitting_template', JSON.stringify({ step: 'title' }));
 
-    await this.bot.sendMessage(chatId,
+    await this.safeSendMarkdown(chatId,
       '🎨 *הגשת תבנית לספרייה הקהילתית*\n\n' +
       'תודה שאתה רוצה לתרום לקהילה! 🙏\n\n' +
       'התבנית שלך תעבור בדיקה קצרה לפני שתהיה זמינה לכולם.\n\n' +
       '📝 *שלב 1 מתוך 4: כותרת*\n' +
       'מה שם התבנית? (לדוגמה: "דו״ח שבועי" או "תיעוד API")\n\n' +
-      '💡 שלח /cancel_submission בכל שלב לביטול',
-      { parse_mode: 'Markdown' }
+      '💡 שלח /cancel_submission בכל שלב לביטול'
     );
   }
 
