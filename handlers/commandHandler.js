@@ -538,7 +538,7 @@ print("hello world")
 def escape_markdown_v2(text: str) -> str:
     specials = r"_*[]()~\`>#+-=|{}.!"
     for ch in specials:
-        text = text.replace(ch, "\\\\\\\\" + ch)
+        text = text.replace(ch, "\\\\" + ch)
     return text
 \`\`\`
 
