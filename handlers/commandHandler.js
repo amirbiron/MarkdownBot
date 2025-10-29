@@ -1056,11 +1056,7 @@ await update.message.reply_text(msg, parse_mode="MarkdownV2")
       'התבנית שלך תעבור בדיקה קצרה לפני שתהיה זמינה לכולם.\n\n' +
       '📝 *שלב 1 מתוך 4: כותרת*\n' +
       'מה שם התבנית? (לדוגמה: "דו״ח שבועי" או "תיעוד API")\n\n' +
-      '💡 שלח /cancel_submission בכל שלב לביטול',
-      {
-        // הסתרת מקלדת ראשית כדי למנוע בלבול בזמן מילוי טקסט חופשי
-        reply_markup: { remove_keyboard: true }
-      }
+      '💡 שלח /cancel_submission בכל שלב לביטול'
     );
   }
 

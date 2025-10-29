@@ -49,8 +49,11 @@ class MessageHandler {
       '❓ עזרה'
     ];
 
-    // If user clicked a main menu button while in sandbox/training, exit that mode first
-    if (mainMenuButtons.includes(text) && (mode.current_mode === 'sandbox' || mode.current_mode === 'training')) {
+    // If user clicked a main menu button while in a special mode, exit that mode first
+    if (
+      mainMenuButtons.includes(text) &&
+      (mode.current_mode === 'sandbox' || mode.current_mode === 'training' || mode.current_mode === 'submitting_template' || mode.current_mode === 'rejecting_template')
+    ) {
       // Clear the mode first
       this.db.clearUserMode(userId);
 
@@ -1425,13 +1428,8 @@ class MessageHandler {
           `תודה על התרומה לקהילה! 🙏\n\n` +
           `התבנית שלך תיבדק ותאושר בקרוב.\n` +
           `תקבל הודעה כשהיא תאושר!\n\n` +
-          `צפה בהגשות שלך עם /my_submissions`,
-          {
-            parse_mode: 'Markdown',
-            reply_markup: {
-              remove_keyboard: true
-            }
-          }
+          `צפה בהגשות שלך עם \`/my_submissions\``,
+          { parse_mode: 'Markdown' }
         );
 
         // Notify admins about new submission
