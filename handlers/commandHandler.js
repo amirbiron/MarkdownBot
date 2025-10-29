@@ -82,6 +82,10 @@ class CommandHandler {
       `/cheatsheet - הצג מדריך מהיר\n` +
       `/markdown_guide - מדריך Markdown לטלגרם\n` +
       `/exit - צא ממצב מעבדה\n\n` +
+      `👥 *ספרייה קהילתית:*\n` +
+      `/submit_template - הגש תבנית משלך לספרייה\n` +
+      `/my_submissions - צפה בהגשות שלך\n` +
+      `/cancel_submission - בטל הגשת תבנית\n\n` +
       `💡 *טיפים:*\n` +
       `• השתמש באימון ממוקד (/train) לתרגל נושאים ספציפיים\n` +
       `• השתמש במעבדה (/sandbox) כדי לראות איך הקוד שלך נראה\n` +
@@ -89,7 +93,7 @@ class CommandHandler {
       `• תרגל כל יום כדי לשפר את הכישורים שלך`;
 
     if (this.isAdmin(userId)) {
-      helpText += `\n\n🧰 *אדמין:*\n/reset_progress - אפס התקדמות (כדי לאפס משתמש אחר, שלח כ-reply)\n/statistics - הצג סטטיסטיקות משתמשים`;
+      helpText += `\n\n🧰 *אדמין:*\n/reset_progress - אפס התקדמות (כדי לאפס משתמש אחר, שלח כ-reply)\n/statistics - הצג סטטיסטיקות משתמשים\n/review_templates - בדוק תבניות ממתינות לאישור`;
     }
 
     helpText += `\n\nשאלות? צור קשר עם היוצר: @moominAmir`;
@@ -702,41 +706,68 @@ await update.message.reply_text(msg, parse_mode="MarkdownV2")
 
     this.db.updateLastActive(userId);
 
-    await this.bot.sendMessage(chatId,
-      `📚 *ספריית תבניות Markdown*\n\n` +
-      `בחר תבנית מוכנה לשימוש:`,
-      {
-        parse_mode: 'Markdown',
-        reply_markup: {
-          inline_keyboard: [
-            [
-              { text: '📋 PRD - מסמך דרישות', callback_data: 'template_prd' }
-            ],
-            [
-              { text: '📖 README - תיעוד פרויקט', callback_data: 'template_readme' }
-            ],
-            [
-              { text: '🔍 Post Mortem - ניתוח תקלה', callback_data: 'template_postmortem' }
-            ],
-            [
-              { text: '✍️ Blog Post - מאמר טכני', callback_data: 'template_blog' }
-            ],
-            [
-              { text: '📝 Meeting Notes - פרוטוקול', callback_data: 'template_meeting' }
-            ],
-            [
-              { text: '📄 One-Pager - מצגת רעיון', callback_data: 'template_onepager' }
-            ],
-            [
-              { text: '🔌 API Reference - תיעוד API', callback_data: 'template_api' }
-            ],
-            [
-              { text: '✅ QA Test Plan - תוכנית בדיקות', callback_data: 'template_test-plan' }
-            ]
-          ]
-        }
+    // Get community templates
+    const communityTemplates = this.db.getCommunityTemplates();
+
+    const keyboard = [
+      [
+        { text: '📋 PRD - מסמך דרישות', callback_data: 'template_prd' }
+      ],
+      [
+        { text: '📖 README - תיעוד פרויקט', callback_data: 'template_readme' }
+      ],
+      [
+        { text: '🔍 Post Mortem - ניתוח תקלה', callback_data: 'template_postmortem' }
+      ],
+      [
+        { text: '✍️ Blog Post - מאמר טכני', callback_data: 'template_blog' }
+      ],
+      [
+        { text: '📝 Meeting Notes - פרוטוקול', callback_data: 'template_meeting' }
+      ],
+      [
+        { text: '📄 One-Pager - מצגת רעיון', callback_data: 'template_onepager' }
+      ],
+      [
+        { text: '🔌 API Reference - תיעוד API', callback_data: 'template_api' }
+      ],
+      [
+        { text: '✅ QA Test Plan - תוכנית בדיקות', callback_data: 'template_test-plan' }
+      ]
+    ];
+
+    // Add community templates if any
+    if (communityTemplates.length > 0) {
+      keyboard.push([
+        { text: '━━━━ תבניות קהילתיות ━━━━', callback_data: 'noop' }
+      ]);
+
+      communityTemplates.forEach(template => {
+        const authorName = template.first_name || template.username || 'קהילה';
+        keyboard.push([
+          {
+            text: `👥 ${template.title} (${authorName})`,
+            callback_data: `community_template_${template.template_id}`
+          }
+        ]);
+      });
+    }
+
+    let message = `📚 *ספריית תבניות Markdown*\n\n` +
+      `בחר תבנית מוכנה לשימוש:`;
+
+    if (communityTemplates.length > 0) {
+      message += `\n\n👥 *יש ${communityTemplates.length} תבניות קהילתיות!*`;
+    }
+
+    message += `\n\n💡 רוצה להוסיף תבנית משלך? שלח /submit_template`;
+
+    await this.bot.sendMessage(chatId, message, {
+      parse_mode: 'Markdown',
+      reply_markup: {
+        inline_keyboard: keyboard
       }
-    );
+    });
   }
 
   // ========================================
@@ -981,6 +1012,155 @@ await update.message.reply_text(msg, parse_mode="MarkdownV2")
       'אפשר להתחיל אימון חדש עם /train\n' +
       'או להמשיך בשיעורים עם /next'
     );
+  }
+
+  // ========================================
+  // /submit_template - Submit a community template
+  // ========================================
+  async handleSubmitTemplate(msg) {
+    const chatId = msg.chat.id;
+    const userId = msg.from.id;
+
+    this.db.updateLastActive(userId);
+
+    // Check if user is already submitting a template
+    const mode = this.db.getUserMode(userId);
+    if (mode.current_mode === 'submitting_template') {
+      await this.bot.sendMessage(chatId,
+        '⚠️ אתה כבר באמצע הגשת תבנית!\n\n' +
+        'סיים את ההגשה הנוכחית או שלח /cancel_submission לביטול.'
+      );
+      return;
+    }
+
+    // Start template submission flow
+    this.db.setUserMode(userId, 'submitting_template', JSON.stringify({ step: 'title' }));
+
+    await this.bot.sendMessage(chatId,
+      '🎨 *הגשת תבנית לספרייה הקהילתית*\n\n' +
+      'תודה שאתה רוצה לתרום לקהילה! 🙏\n\n' +
+      'התבנית שלך תעבור בדיקה קצרה לפני שתהיה זמינה לכולם.\n\n' +
+      '📝 *שלב 1 מתוך 4: כותרת*\n' +
+      'מה שם התבנית? (לדוגמה: "דו״ח שבועי" או "תיעוד API")\n\n' +
+      '💡 שלח /cancel_submission בכל שלב לביטול',
+      { parse_mode: 'Markdown' }
+    );
+  }
+
+  // ========================================
+  // /cancel_submission - Cancel template submission
+  // ========================================
+  async handleCancelSubmission(msg) {
+    const chatId = msg.chat.id;
+    const userId = msg.from.id;
+
+    this.db.updateLastActive(userId);
+
+    const mode = this.db.getUserMode(userId);
+
+    if (mode.current_mode !== 'submitting_template') {
+      await this.bot.sendMessage(chatId,
+        'אתה לא באמצע הגשת תבנית כרגע.\n\n' +
+        'כדי להגיש תבנית חדשה, שלח /submit_template'
+      );
+      return;
+    }
+
+    // Clear user mode
+    this.db.clearUserMode(userId);
+
+    await this.bot.sendMessage(chatId,
+      '✅ ההגשה בוטלה בהצלחה.\n\n' +
+      'אפשר להגיש תבנית חדשה עם /submit_template בכל עת!'
+    );
+  }
+
+  // ========================================
+  // /review_templates - Admin: Review pending template submissions
+  // ========================================
+  async handleReviewTemplates(msg) {
+    const chatId = msg.chat.id;
+    const userId = msg.from.id;
+
+    if (!this.isAdmin(userId)) {
+      await this.bot.sendMessage(chatId, '⛔ פקודה זו זמינה רק לאדמין.');
+      return;
+    }
+
+    this.db.updateLastActive(userId);
+
+    const pendingSubmissions = this.db.getPendingSubmissions(10);
+
+    if (pendingSubmissions.length === 0) {
+      await this.bot.sendMessage(chatId,
+        '✅ אין תבניות ממתינות לאישור!\n\n' +
+        'כל ההגשות טופלו.'
+      );
+      return;
+    }
+
+    await this.bot.sendMessage(chatId,
+      `📋 *תבניות ממתינות לאישור* (${pendingSubmissions.length})\n\n` +
+      'בחר תבנית לבדיקה:',
+      {
+        parse_mode: 'Markdown',
+        reply_markup: {
+          inline_keyboard: pendingSubmissions.map(sub => [
+            {
+              text: `${sub.title} - מאת ${sub.first_name || sub.username || 'אנונימי'}`,
+              callback_data: `review_sub_${sub.id}`
+            }
+          ])
+        }
+      }
+    );
+  }
+
+  // ========================================
+  // /my_submissions - View user's template submissions
+  // ========================================
+  async handleMySubmissions(msg) {
+    const chatId = msg.chat.id;
+    const userId = msg.from.id;
+
+    this.db.updateLastActive(userId);
+
+    const submissions = this.db.getUserSubmissions(userId, 10);
+
+    if (submissions.length === 0) {
+      await this.bot.sendMessage(chatId,
+        '📭 עדיין לא הגשת תבניות.\n\n' +
+        'רוצה להגיש תבנית? שלח /submit_template'
+      );
+      return;
+    }
+
+    const statusEmoji = {
+      'pending': '⏳',
+      'approved': '✅',
+      'rejected': '❌'
+    };
+
+    const statusText = {
+      'pending': 'ממתין לאישור',
+      'approved': 'אושר',
+      'rejected': 'נדחה'
+    };
+
+    let message = `📝 *ההגשות שלך* (${submissions.length})\n\n`;
+
+    submissions.forEach((sub, i) => {
+      const status = statusEmoji[sub.status] || '❓';
+      const statusLabel = statusText[sub.status] || sub.status;
+      message += `${i + 1}. ${status} *${sub.title}*\n`;
+      message += `   ${sub.category} | ${statusLabel}\n`;
+      if (sub.status === 'rejected' && sub.rejection_reason) {
+        message += `   💬 סיבה: ${sub.rejection_reason}\n`;
+      }
+      message += `   📅 ${new Date(sub.submitted_at).toLocaleDateString('he-IL')}\n\n`;
+    });
+
+    await this.bot.sendMessage(chatId, message, { parse_mode: 'Markdown' });
   }
 
   // ========================================

@@ -207,6 +207,34 @@ if (bot && commandHandler && messageHandler) {
     }
   });
 
+  // Handle /submit_template command (submit community template)
+  bot.onText(/\/submit_template/, async (msg) => {
+    if (await maintenanceMiddleware(msg, () => true)) {
+      commandHandler.handleSubmitTemplate(msg);
+    }
+  });
+
+  // Handle /cancel_submission command (cancel template submission)
+  bot.onText(/\/cancel_submission/, async (msg) => {
+    if (await maintenanceMiddleware(msg, () => true)) {
+      commandHandler.handleCancelSubmission(msg);
+    }
+  });
+
+  // Handle /my_submissions command (view user's submissions)
+  bot.onText(/\/my_submissions/, async (msg) => {
+    if (await maintenanceMiddleware(msg, () => true)) {
+      commandHandler.handleMySubmissions(msg);
+    }
+  });
+
+  // Handle /review_templates command (admin only)
+  bot.onText(/\/review_templates/, async (msg) => {
+    if (await maintenanceMiddleware(msg, () => true)) {
+      commandHandler.handleReviewTemplates(msg);
+    }
+  });
+
   // Handle callback queries (button clicks)
   bot.on('callback_query', async (query) => {
     if (await maintenanceMiddleware(query.message, () => true)) {
