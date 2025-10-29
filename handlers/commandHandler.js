@@ -456,7 +456,7 @@ Markdown רגיל בטלגרם לא מספיק\\. ה\\-Bot API משתמש ב\\-*
 _ * [ ] ( ) ~ \` > # + - = | { } . !
 \`\`\`
 
-כלומר: כששולחים טקסט מהבוט → כל תו כזה צריך \`\\\\\`\\.
+כלומר: כששולחים טקסט מהבוט → כל תו כזה צריך \`\\\`\\.
 
 ━━━━━━━━━━━━━━━━━━━━
 
@@ -538,7 +538,7 @@ print("hello world")
 
 פונקציה ש\\-escape את כל מה שצריך לפני שליחה:
 
-\`\`\`python
+\`\`\`
 def escape_markdown_v2(text: str) -> str:
     specials = r"_*[]()~\`>#+-=|{}.!"
     for ch in specials:
@@ -548,7 +548,7 @@ def escape_markdown_v2(text: str) -> str:
 
 שימוש:
 
-\`\`\`python
+\`\`\`
 safe_text = escape_markdown_v2("קישור - לחץ כאן. (הערה)")
 await update.message.reply_text(safe_text, parse_mode="MarkdownV2")
 \`\`\`
