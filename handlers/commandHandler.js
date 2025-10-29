@@ -401,14 +401,21 @@ class CommandHandler {
     const guide = this.buildTelegramDevGuide();
 
     try {
-      await this.bot.sendMessage(chatId, guide, { parse_mode: 'MarkdownV2' });
+      await this.safeSendMarkdownV2(chatId, guide);
     } catch (error) {
       console.error('Error sending Telegram dev guide:', error);
-      // Fallback: try without parse mode
-      await this.bot.sendMessage(chatId,
-        'מדריך למפתחים - Markdown בטלגרם\n\n' +
-        'מצטער, אירעה שגיאה בשליחת המדריך המעוצב. אנא נסה שוב מאוחר יותר.'
-      );
+      // Final fallback: send as plain text without MarkdownV2 escapes
+      try {
+        const plain = this.unescapeMarkdownV2(guide);
+        await this.bot.sendMessage(chatId, plain);
+      } catch (e2) {
+        console.error('Fallback send of Telegram dev guide also failed:', e2);
+        await this.bot.sendMessage(
+          chatId,
+          'מדריך למפתחים - Markdown בטלגרם\n\n' +
+            'מצטער, אירעה שגיאה בשליחת המדריך. נסו שוב מאוחר יותר.'
+        );
+      }
     }
   }
 
@@ -637,6 +644,38 @@ await update.message.reply_text(msg, parse_mode="MarkdownV2")
 • /templates \\- תבניות מוכנות
 
 מקור: @moominAmir`;
+  }
+
+  /**
+   * Safely send a MarkdownV2-formatted message. If Telegram rejects due to
+   * entity parsing (e.g., escaping issues), fall back to plain text while
+   * preserving content readability by removing MarkdownV2 escape backslashes.
+   */
+  async safeSendMarkdownV2(chatId, text, options = {}) {
+    try {
+      return await this.bot.sendMessage(chatId, text, {
+        parse_mode: 'MarkdownV2',
+        disable_web_page_preview: true,
+        ...options,
+      });
+    } catch (err) {
+      const desc = String(err?.response?.body?.description || err?.message || '').toLowerCase();
+      if (desc.includes("can't parse entities") || desc.includes('parse') || desc.includes('entity')) {
+        const plain = this.unescapeMarkdownV2(text);
+        return await this.bot.sendMessage(chatId, plain, { disable_web_page_preview: true, ...options });
+      }
+      throw err;
+    }
+  }
+
+  /**
+   * Convert a MarkdownV2-escaped string back to a readable plain-text string
+   * by removing escape backslashes before special characters.
+   */
+  unescapeMarkdownV2(text) {
+    if (!text) return text;
+    // Remove backslash before any MarkdownV2 special char
+    return text.replace(/\\([_*\[\]()~`>#\+\-=|{}\.!\\])/g, '$1');
   }
 
   // ========================================
