@@ -147,6 +147,44 @@ class DatabaseManager {
         FOREIGN KEY (user_id) REFERENCES users(user_id)
       )
     `);
+
+    // Template submissions - tracks user submitted templates pending approval
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS template_submissions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER,
+        template_id TEXT,
+        title TEXT,
+        category TEXT,
+        description TEXT,
+        content TEXT,
+        submitted_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        reviewed_at DATETIME,
+        status TEXT DEFAULT 'pending',
+        reviewed_by INTEGER,
+        rejection_reason TEXT,
+        FOREIGN KEY (user_id) REFERENCES users(user_id),
+        FOREIGN KEY (reviewed_by) REFERENCES users(user_id)
+      )
+    `);
+
+    // Community templates - approved templates from the community
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS community_templates (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        template_id TEXT UNIQUE,
+        title TEXT,
+        category TEXT,
+        description TEXT,
+        content TEXT,
+        author_id INTEGER,
+        submission_id INTEGER,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        usage_count INTEGER DEFAULT 0,
+        FOREIGN KEY (author_id) REFERENCES users(user_id),
+        FOREIGN KEY (submission_id) REFERENCES template_submissions(id)
+      )
+    `);
   }
 
   // ========================================
@@ -556,6 +594,175 @@ class DatabaseManager {
       WHERE user_id = ?
     `);
     stmt.run(theme, userId);
+  }
+
+  // ========================================
+  // Community Templates Management
+  // ========================================
+
+  createTemplateSubmission(userId, templateId, title, category, description, content) {
+    const stmt = this.db.prepare(`
+      INSERT INTO template_submissions
+      (user_id, template_id, title, category, description, content, status)
+      VALUES (?, ?, ?, ?, ?, ?, 'pending')
+    `);
+    const result = stmt.run(userId, templateId, title, category, description, content);
+    console.log(`📝 User ${userId} submitted template "${title}" (ID: ${result.lastInsertRowid})`);
+    return result.lastInsertRowid;
+  }
+
+  getPendingSubmissions(limit = 10) {
+    const stmt = this.db.prepare(`
+      SELECT
+        ts.*,
+        u.username,
+        u.first_name,
+        u.last_name
+      FROM template_submissions ts
+      LEFT JOIN users u ON ts.user_id = u.user_id
+      WHERE ts.status = 'pending'
+      ORDER BY ts.submitted_at DESC
+      LIMIT ?
+    `);
+    return stmt.all(limit);
+  }
+
+  getAllSubmissions(limit = 50) {
+    const stmt = this.db.prepare(`
+      SELECT
+        ts.*,
+        u.username,
+        u.first_name,
+        u.last_name,
+        r.username as reviewer_username
+      FROM template_submissions ts
+      LEFT JOIN users u ON ts.user_id = u.user_id
+      LEFT JOIN users r ON ts.reviewed_by = r.user_id
+      ORDER BY ts.submitted_at DESC
+      LIMIT ?
+    `);
+    return stmt.all(limit);
+  }
+
+  getTemplateSubmissionById(submissionId) {
+    const stmt = this.db.prepare(`
+      SELECT
+        ts.*,
+        u.username,
+        u.first_name,
+        u.last_name
+      FROM template_submissions ts
+      LEFT JOIN users u ON ts.user_id = u.user_id
+      WHERE ts.id = ?
+    `);
+    return stmt.get(submissionId);
+  }
+
+  getUserSubmissions(userId, limit = 10) {
+    const stmt = this.db.prepare(`
+      SELECT * FROM template_submissions
+      WHERE user_id = ?
+      ORDER BY submitted_at DESC
+      LIMIT ?
+    `);
+    return stmt.all(userId, limit);
+  }
+
+  approveTemplateSubmission(submissionId, reviewerId) {
+    const submission = this.getTemplateSubmissionById(submissionId);
+    if (!submission) {
+      throw new Error('Submission not found');
+    }
+
+    const trx = this.db.transaction(() => {
+      // Update submission status
+      const updateStmt = this.db.prepare(`
+        UPDATE template_submissions
+        SET status = 'approved',
+            reviewed_at = CURRENT_TIMESTAMP,
+            reviewed_by = ?
+        WHERE id = ?
+      `);
+      updateStmt.run(reviewerId, submissionId);
+
+      // Add to community templates
+      const insertStmt = this.db.prepare(`
+        INSERT INTO community_templates
+        (template_id, title, category, description, content, author_id, submission_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `);
+      insertStmt.run(
+        submission.template_id,
+        submission.title,
+        submission.category,
+        submission.description,
+        submission.content,
+        submission.user_id,
+        submissionId
+      );
+    });
+
+    trx();
+    console.log(`✅ Approved template submission ${submissionId} by reviewer ${reviewerId}`);
+  }
+
+  rejectTemplateSubmission(submissionId, reviewerId, reason = null) {
+    const stmt = this.db.prepare(`
+      UPDATE template_submissions
+      SET status = 'rejected',
+          reviewed_at = CURRENT_TIMESTAMP,
+          reviewed_by = ?,
+          rejection_reason = ?
+      WHERE id = ?
+    `);
+    stmt.run(reviewerId, reason, submissionId);
+    console.log(`❌ Rejected template submission ${submissionId} by reviewer ${reviewerId}`);
+  }
+
+  getCommunityTemplates() {
+    const stmt = this.db.prepare(`
+      SELECT
+        ct.*,
+        u.username,
+        u.first_name,
+        u.last_name
+      FROM community_templates ct
+      LEFT JOIN users u ON ct.author_id = u.user_id
+      ORDER BY ct.usage_count DESC, ct.created_at DESC
+    `);
+    return stmt.all();
+  }
+
+  getCommunityTemplateById(templateId) {
+    const stmt = this.db.prepare(`
+      SELECT
+        ct.*,
+        u.username,
+        u.first_name,
+        u.last_name
+      FROM community_templates ct
+      LEFT JOIN users u ON ct.author_id = u.user_id
+      WHERE ct.template_id = ?
+    `);
+    return stmt.get(templateId);
+  }
+
+  incrementTemplateUsage(templateId) {
+    const stmt = this.db.prepare(`
+      UPDATE community_templates
+      SET usage_count = usage_count + 1
+      WHERE template_id = ?
+    `);
+    stmt.run(templateId);
+  }
+
+  deleteCommunityTemplate(templateId) {
+    const stmt = this.db.prepare(`
+      DELETE FROM community_templates
+      WHERE template_id = ?
+    `);
+    stmt.run(templateId);
+    console.log(`🗑️ Deleted community template ${templateId}`);
   }
 
   // ========================================
