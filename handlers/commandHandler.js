@@ -423,7 +423,7 @@ class CommandHandler {
 
 ✅ *למה אתה צריך את זה?*
 
-Markdown רגיל בטלגרם לא מספיק\\. ה\\-Bot API משתמש ב\\-*MarkdownV2* \\- עם טעם משלו, וכל טעות קטנה \\= ההודעה לא נשלחת\\.
+Markdown רגיל בטלגרם לא מספיק\\. ה\\-Bot API משתמש ב\\-*MarkdownV2* – עם טעם משלו, וכל טעות קטנה → ההודעה לא נשלחת\\.
 
 לפעמים אפילו המחרוזת הכי תמימה:
 
@@ -444,7 +444,7 @@ Markdown רגיל בטלגרם לא מספיק\\. ה\\-Bot API משתמש ב\\-*
 _ * [ ] ( ) ~ \` > # + - = | { } . !
 \`\`\`
 
-כלומר: כששולחים טקסט מהבוט כל תו כזה צריך backslash\\.
+כלומר: כששולחים טקסט מהבוט → כל תו כזה צריך \`\\\\\`\\.
 
 ━━━━━━━━━━━━━━━━━━━━
 
@@ -452,7 +452,7 @@ _ * [ ] ( ) ~ \` > # + - = | { } . !
 
 *❌ דוגמה בעייתית*
 
-\`\`\`
+\`\`\`python
 await update.message.reply_text(
     "קישור - לחץ כאן: https://example.com",
     parse_mode="MarkdownV2"
@@ -463,22 +463,22 @@ await update.message.reply_text(
 
 *✅ נכון:*
 
-\`\`\`
-"קישור \\- לחץ כאן: https://example\\.com"
+\`\`\`python
+" קישור \\\\- לחץ כאן: https://example\\\\.com "
 \`\`\`
 
 ━━━━━━━━━━━━━━━━━━━━
 
 *❌ גם URLs יכולים לשבור*
 
-\`\`\`
+\`\`\`markdown
 [test](https://example.com/test(1))
 \`\`\`
 
 *✅ נכון:*
 
-\`\`\`
-[test](https://example.com/test\\(1\\))
+\`\`\`markdown
+[test](https://example.com/test\\\\(1\\\\))
 \`\`\`
 
 ━━━━━━━━━━━━━━━━━━━━
@@ -492,48 +492,53 @@ await update.message.reply_text(
 *✅ נכון:*
 
 \`\`\`
-תודה שביקרתם\\.
+תודה שביקרתם\\\\.
 \`\`\`
 
 ━━━━━━━━━━━━━━━━━━━━
 
 *❌ מילת קוד ללא escape*
 
-צריך escape לסוגריים וסימן קריאה בתוך inline code
+\`\`\`
+\`print("hi!")\`
+\`\`\`
+
+צריך escape לסוגריים וסימן קריאה:
+
+\`\`\`
+\\\\\`print\\\\("hi\\\\!"\\\\)\\\\\`
+\`\`\`
 
 ━━━━━━━━━━━━━━━━━━━━
 
-✅ *איך לכתוב בלי להילחם בזה?*
+✅ *איך לכתוב בלי להילחם בזה? — שימוש ב\\-Code Blocks*
 
 טיפ: כשאפשר, השתמשו ב\\-Code Block\\.
 הוא *מנטרל את רוב הבעיות* וחוסך ESCAPE\\.
 
-\`\`\`
+\`\`\`python
 print("hello world")
 \`\`\`
 
 ━━━━━━━━━━━━━━━━━━━━
 
-✅ *פתרון מקצועי \\- Auto Escape*
+✅ *פתרון "מקצועי" — Auto\\-Escape*
 
 פונקציה ש\\-escape את כל מה שצריך לפני שליחה:
 
-\`\`\`
-def escape_markdown_v2(text: str):
+\`\`\`python
+def escape_markdown_v2(text: str) -> str:
     specials = r"_*[]()~\`>#+-=|{}.!"
     for ch in specials:
-        text = text.replace(ch, "\\\\" + ch)
+        text = text.replace(ch, "\\\\\\\\" + ch)
     return text
 \`\`\`
 
 שימוש:
 
-\`\`\`
-safe_text = escape_markdown_v2("קישור - לחץ כאן.")
-await update.message.reply_text(
-    safe_text,
-    parse_mode="MarkdownV2"
-)
+\`\`\`python
+safe_text = escape_markdown_v2("קישור - לחץ כאן. (הערה)")
+await update.message.reply_text(safe_text, parse_mode="MarkdownV2")
 \`\`\`
 
 ✅ עובד על הכל
@@ -546,14 +551,25 @@ await update.message.reply_text(
 
 לטלגרם יש שני סוגים:
 
-*✅ Inline:* backtick בודד
-*✅ מספר שורות:* שלושה backticks
+*✅ Inline:*
+
+\`\`\`
+\`value = 5\`
+\`\`\`
+
+*✅ מספר שורות:*
 
 \`\`\`
 function test() {
     return true;
 }
 \`\`\`
+
+אם יש backticks בקוד → השתמשו בשלושה או ארבעה:
+
+\`\`\`\`
+print(\\\`hello\\\`)
+\`\`\`\`
 
 ━━━━━━━━━━━━━━━━━━━━
 
@@ -568,19 +584,20 @@ function test() {
 *✅ עם פרמטרים:*
 
 \`\`\`
-[פתיחה](https://example.com/test\\?id\\=5)
+[פתיחה](https://example.com/test\\\\?id\\\\=5\\\\&ref\\\\=abc)
 \`\`\`
 
 ━━━━━━━━━━━━━━━━━━━━
 
-✅ *תבנית הודעה מעוצבת*
+✅ *תבנית הודעה מעוצבת מורכבת*
 
-\`\`\`
+\`\`\`python
 msg = (
-    "*✅ ביצוע הושלם*\\n"
-    "_הקובץ נשמר בהצלחה_\\n"
-    "[קישור](https://example\\.com)"
+    "*✅ ביצוע הושלם*\\\\n"
+    "_הקובץ נשמר בהצלחה_\\\\n"
+    "[קישור לצפייה](https://example\\\\.com/view)"
 )
+await update.message.reply_text(msg, parse_mode="MarkdownV2")
 \`\`\`
 
 ━━━━━━━━━━━━━━━━━━━━
@@ -596,18 +613,20 @@ msg = (
 ✔ Inline code
 ✔ Code block
 
-כולם עובדים מתוך העורך המובנה של טלגרם \\- בלי שום Markdown\\.
+כולם עובדים מתוך העורך המובנה של טלגרם — בלי שום Markdown\\.
 
 ━━━━━━━━━━━━━━━━━━━━
 
-✅ *סיכום למפתחים*
+✅ *סיכום זהב למפתחים*
 
 \`\`\`
-הודעות טקסט בסיסיות - לא צריך MarkdownV2
-Bold/Italic - כן, צריך ESCAPE
-קישורים - כן, לפעמים צריך ESCAPE
-קוד - כן, אם יש תווים מיוחדים
-טקסט חופשי - מומלץ Auto-Escape
+| פעולה                 | צריך MarkdownV2? | צריך ESCAPE?  |
+|----------------------|-----------------|--------------|
+| הודעות טקסט בסיסיות   | לא              | לא           |
+| Bold/Italic          | כן              | כן           |
+| קישורים              | כן              | לפעמים       |
+| קוד                  | כן              | אם יש תווים   |
+| טקסט חופשי מהמשתמש    | כן              | מומלץ Auto-Escape |
 \`\`\`
 
 ━━━━━━━━━━━━━━━━━━━━
