@@ -538,7 +538,7 @@ print("hello world")
 def escape_markdown_v2(text: str) -> str:
     specials = r"_*[]()~\`>#+-=|{}.!"
     for ch in specials:
-        text = text.replace(ch, "\\\\\\\\" + ch)
+        text = text.replace(ch, "\\\\" + ch)
     return text
 \`\`\`
 
@@ -623,21 +623,7 @@ await update.message.reply_text(msg, parse_mode="MarkdownV2")
 
 כולם עובדים מתוך העורך המובנה של טלגרם — בלי שום Markdown\\.
 
-━━━━━━━━━━━━━━━━━━━━
-
-✅ *סיכום זהב למפתחים*
-
-\`\`\`
-| פעולה                 | צריך MarkdownV2? | צריך ESCAPE?  |
-|----------------------|-----------------|--------------|
-| הודעות טקסט בסיסיות   | לא              | לא           |
-| Bold/Italic          | כן              | כן           |
-| קישורים              | כן              | לפעמים       |
-| קוד                  | כן              | אם יש תווים   |
-| טקסט חופשי מהמשתמש    | כן              | מומלץ Auto-Escape |
-\`\`\`
-
-━━━━━━━━━━━━━━━━━━━━
+ 
 
 💡 רוצה לתרגל Markdown רגיל? נסה:
 • /sandbox \\- מעבדת תרגול
