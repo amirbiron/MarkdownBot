@@ -204,6 +204,8 @@ class MessageHandler {
       await this.handleCommunityTemplateSelection(chatId, userId, data);
     } else if (data.startsWith('template_')) {
       await this.handleTemplateSelection(chatId, userId, data);
+    } else if (data.startsWith('tplcat_')) {
+      await this.handleTemplateCategorySelection(chatId, userId, data, messageId);
     } else if (data.startsWith('train_topic_')) {
       await this.handleTrainingTopicSelection(chatId, userId, data, messageId);
     } else if (data === 'train_hint') {
@@ -1320,17 +1322,23 @@ class MessageHandler {
         await this.bot.sendMessage(chatId,
           `✅ כותרת נשמרה: "${text}"\n\n` +
           `📝 *שלב 2 מתוך 4: קטגוריה*\n` +
-          `לאיזו קטגוריה התבנית שייכת?`,
+          `בחר קטגוריה באמצעות הכפתורים למטה:`,
           {
             parse_mode: 'Markdown',
             reply_markup: {
-              keyboard: [
-                ['📋 תיעוד מוצר', '💻 קוד ופיתוח'],
-                ['📝 ניהול', '✍️ כתיבה'],
-                ['🎯 אחר']
-              ],
-              resize_keyboard: true,
-              one_time_keyboard: true
+              inline_keyboard: [
+                [
+                  { text: '📋 תיעוד מוצר', callback_data: 'tplcat_product-docs' },
+                  { text: '💻 קוד ופיתוח', callback_data: 'tplcat_code-dev' }
+                ],
+                [
+                  { text: '📝 ניהול', callback_data: 'tplcat_management' },
+                  { text: '✍️ כתיבה', callback_data: 'tplcat_writing' }
+                ],
+                [
+                  { text: '🎯 אחר', callback_data: 'tplcat_other' }
+                ]
+              ]
             }
           }
         );
@@ -1437,6 +1445,62 @@ class MessageHandler {
         'נסה שוב או שלח /cancel_submission לביטול.'
       );
     }
+  }
+
+  /**
+   * Handle category selection via inline keyboard during template submission.
+   */
+  async handleTemplateCategorySelection(chatId, userId, data, messageId) {
+    // Map callback keys to human-readable Hebrew categories
+    const categoryMap = {
+      'tplcat_product-docs': 'תיעוד מוצר',
+      'tplcat_code-dev': 'קוד ופיתוח',
+      'tplcat_management': 'ניהול',
+      'tplcat_writing': 'כתיבה',
+      'tplcat_other': 'אחר'
+    };
+
+    const key = data;
+    const picked = categoryMap[key];
+    if (!picked) {
+      return; // Unknown key; ignore silently
+    }
+
+    // Try to remove the inline keyboard to prevent double taps
+    try {
+      await this.bot.editMessageReplyMarkup({ inline_keyboard: [] }, { chat_id: chatId, message_id: messageId });
+    } catch (err) {
+      const msg = String(err?.response?.body?.description || err?.message || '').toLowerCase();
+      if (!msg.includes('message is not modified')) {
+        // Only ignore the benign case
+        console.warn('editMessageReplyMarkup failed:', msg);
+      }
+    }
+
+    // Load mode; ensure we are indeed in submitting_template flow
+    const mode = this.db.getUserMode(userId);
+    if (mode.current_mode !== 'submitting_template') {
+      return;
+    }
+
+    const modeData = JSON.parse(mode.mode_data || '{}');
+    // Only proceed if waiting for category
+    if (modeData.step !== 'category') {
+      return;
+    }
+
+    // Persist category and advance to next step
+    modeData.category = picked;
+    modeData.step = 'description';
+    this.db.setUserMode(userId, 'submitting_template', JSON.stringify(modeData));
+
+    await this.bot.sendMessage(chatId,
+      `✅ קטגוריה נשמרה: "${picked}"\n\n` +
+      `📝 *שלב 3 מתוך 4: תיאור*\n` +
+      `תאר בקצרה את התבנית (1-2 משפטים).\n` +
+      `למשל: "תבנית לדו״ח שבועי עם סיכום משימות וסטטיסטיקות"`,
+      { parse_mode: 'Markdown' }
+    );
   }
 
   async notifyAdminsNewSubmission(title, userId) {
