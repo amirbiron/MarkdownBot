@@ -401,7 +401,8 @@ class CommandHandler {
     const guide = this.buildTelegramDevGuide();
 
     try {
-      await this.safeSendMarkdownV2(chatId, guide);
+      // Send in smaller, safe-to-parse sections to avoid MarkdownV2 pitfalls
+      await this.sendMarkdownV2InSections(chatId, guide);
     } catch (error) {
       console.error('Error sending Telegram dev guide:', error);
       // Final fallback: send as plain text without MarkdownV2 escapes
@@ -661,6 +662,19 @@ await update.message.reply_text(msg, parse_mode="MarkdownV2")
     } catch (err) {
       const desc = String(err?.response?.body?.description || err?.message || '').toLowerCase();
       if (desc.includes("can't parse entities") || desc.includes('parse') || desc.includes('entity')) {
+        // Retry once without language hints in code fences (```lang → ```)
+        const withoutLangFences = text.replace(/```[a-zA-Z0-9_+#-]+/g, '```');
+        if (withoutLangFences !== text) {
+          try {
+            return await this.bot.sendMessage(chatId, withoutLangFences, {
+              parse_mode: 'MarkdownV2',
+              disable_web_page_preview: true,
+              ...options,
+            });
+          } catch (_) {
+            // fall through to plain text fallback
+          }
+        }
         const plain = this.unescapeMarkdownV2(text);
         return await this.bot.sendMessage(chatId, plain, { disable_web_page_preview: true, ...options });
       }
@@ -676,6 +690,21 @@ await update.message.reply_text(msg, parse_mode="MarkdownV2")
     if (!text) return text;
     // Remove backslash before any MarkdownV2 special char
     return text.replace(/\\([_*\[\]()~`>#\+\-=|{}\.!\\])/g, '$1');
+  }
+
+  /**
+   * Split a long MarkdownV2 message into logical sections and send sequentially.
+   * Sections are split by the visual delimiter line used in the guide.
+   */
+  async sendMarkdownV2InSections(chatId, text) {
+    const delimiter = '\n━━━━━━━━━━━━━━━━━━━━\n';
+    const parts = text.split(delimiter);
+
+    for (let i = 0; i < parts.length; i++) {
+      const chunk = i === 0 ? parts[i] : '━━━━━━━━━━━━━━━━━━━━\n\n' + parts[i];
+      await this.safeSendMarkdownV2(chatId, chunk);
+      await this.sleep(200);
+    }
   }
 
   // ========================================
