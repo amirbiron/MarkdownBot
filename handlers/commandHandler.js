@@ -389,7 +389,7 @@ class CommandHandler {
   }
 
   // ========================================
-  // /markdown_guide - Show Telegram Markdown formatting guide
+  // /markdown_guide - Show Telegram Markdown formatting guide for developers
   // ========================================
   async handleMarkdownGuide(msg) {
     const chatId = msg.chat.id;
@@ -397,144 +397,246 @@ class CommandHandler {
 
     this.db.updateLastActive(userId);
 
-    // Part 1: Introduction
-    await this.safeSendMarkdown(chatId,
-      `📖 *מדריך Markdown לטלגרם*\n\n` +
-      `טלגרם תומך ב-Markdown כדי לאפשר לך לכתוב הודעות מעוצבות.\n` +
-      `המדריך הזה יראה לך איך להשתמש ב-MarkdownV2 (הגרסה המומלצת).\n\n` +
-      `👇 המדריך מחולק למספר חלקים:`
-    );
+    // Build the complete developer guide as a single message with MarkdownV2
+    const guide = this.buildTelegramDevGuide();
 
-    await this.sleep(1000);
+    try {
+      await this.bot.sendMessage(chatId, guide, { parse_mode: 'MarkdownV2' });
+    } catch (error) {
+      console.error('Error sending Telegram dev guide:', error);
+      // Fallback: try without parse mode
+      await this.bot.sendMessage(chatId,
+        'מדריך למפתחים - Markdown בטלגרם\n\n' +
+        'מצטער, אירעה שגיאה בשליחת המדריך המעוצב. אנא נסה שוב מאוחר יותר.'
+      );
+    }
+  }
 
-    // Part 2: Basic Formatting
-    await this.safeSendMarkdown(chatId,
-      `*📝 חלק 1: עיצוב בסיסי*\n\n` +
-      `*מודגש (Bold):*\n` +
-      `\`*טקסט מודגש*\`\n` +
-      `תוצאה: *טקסט מודגש*\n\n` +
-      `*נטוי (Italic):*\n` +
-      `\`_טקסט נטוי_\`\n` +
-      `תוצאה: _טקסט נטוי_\n\n` +
-      `*קו תחתון (Underline):*\n` +
-      `\`__טקסט עם קו תחתון__\`\n` +
-      `תוצאה: __טקסט עם קו תחתון__\n\n` +
-      `*קו חוצה (Strikethrough):*\n` +
-      `\`~טקסט עם קו חוצה~\`\n` +
-      `תוצאה: ~טקסט עם קו חוצה~`
-    );
+  // Helper function to build the Telegram developer guide with proper MarkdownV2 escaping
+  buildTelegramDevGuide() {
+    return `🚀 *מדריך למפתחים \\- Markdown בטלגרם*
 
-    await this.sleep(1500);
+*✅ מתאים למפתחים שבונים בוטים*
+*❌ לא מיועד למשתמשי קצה רגילים*
 
-    // Part 3: Code formatting
-    await this.safeSendMarkdown(chatId,
-      `*💻 חלק 2: עיצוב קוד*\n\n` +
-      `*קוד בשורה (Inline code):*\n` +
-      `השתמש ב-backticks:\n` +
-      `\\\`const x = 5;\\\`\n\n` +
-      `*בלוק קוד (Code block):*\n` +
-      `השתמש ב-3 backticks:\n` +
-      `\\\`\\\`\\\`javascript\n` +
-      `function hello() {\n` +
-      `  console.log("שלום!");\n` +
-      `}\n` +
-      `\\\`\\\`\\\`\n\n` +
-      `💡 ניתן להוסיף שם שפה (javascript, python, וכו') לתמיכה ב-syntax highlighting`
-    );
+━━━━━━━━━━━━━━━━━━━━
 
-    await this.sleep(1500);
+✅ *למה אתה צריך את זה?*
 
-    // Part 4: Links
-    await this.safeSendMarkdown(chatId,
-      `*🔗 חלק 3: קישורים*\n\n` +
-      `*קישור רגיל:*\n` +
-      `\`[טקסט הקישור](https://example.com)\`\n\n` +
-      `*דוגמה:*\n` +
-      `[לחץ כאן](https://google.com)\n\n` +
-      `💡 טלגרם מזהה אוטומטית @mentions ו-#hashtags`
-    );
+Markdown רגיל בטלגרם לא מספיק\\. ה\\-Bot API משתמש ב\\-*MarkdownV2* – עם טעם משלו, וכל טעות קטנה → ההודעה לא נשלחת\\.
 
-    await this.sleep(1500);
+לפעמים אפילו המחרוזת הכי תמימה:
 
-    // Part 5: CRITICAL - Escaping rules
-    await this.safeSendMarkdown(chatId,
-      `*⚠️ חלק 4: תווים מיוחדים (חשוב מאוד!)*\n\n` +
-      `ב-MarkdownV2, התווים הבאים *חייבים* להיות עם backslash לפניהם:\n\n` +
-      `\`_ * [ ] ( ) ~ \\\` > # + - = | { } . !\`\n\n` +
-      `*דוגמאות:*\n` +
-      `• \`\\\\*לא מודגש\\\\*\` → \\*לא מודגש\\*\n` +
-      `• \`נקודה\\\\.\` → נקודה.\n` +
-      `• \`סוגריים \\\\(טקסט\\\\)\` → סוגריים (טקסט)\n\n` +
-      `❗ זה הסיבה השכיחה ביותר לשגיאות parsing\\!`
-    );
+\`\`\`
+שלום עולם.
+\`\`\`
 
-    await this.sleep(1500);
+גורמת ל\\-400: Bad Request\\.
+למה? בגלל הנקודה\\.
 
-    // Part 6: Bot implementation
-    await this.safeSendMarkdown(chatId,
-      `*🤖 חלק 5: שימוש בבוטים*\n\n` +
-      `*Python (python-telegram-bot):*\n` +
-      `\`\`\`python\n` +
-      `from telegram.constants import ParseMode\n\n` +
-      `await context.bot.send_message(\n` +
-      `    chat_id=chat_id,\n` +
-      `    text="*טקסט מודגש*",\n` +
-      `    parse_mode=ParseMode.MARKDOWN_V2\n` +
-      `)\n` +
-      `\`\`\`\n\n` +
-      `*Node.js (node-telegram-bot-api):*\n` +
-      `\`\`\`javascript\n` +
-      `bot.sendMessage(chatId, '*טקסט מודגש*', {\n` +
-      `  parse_mode: 'MarkdownV2'\n` +
-      `});\n` +
-      `\`\`\``
-    );
+━━━━━━━━━━━━━━━━━━━━
 
-    await this.sleep(1500);
+✅ *תווים מסוכנים*
 
-    // Part 7: Limitations
-    await this.safeSendMarkdown(chatId,
-      `*🚫 חלק 6: מגבלות טלגרם*\n\n` +
-      `טלגרם *לא תומך* בפיצ'רים הבאים:\n\n` +
-      `❌ כותרות (Headers)\n` +
-      `❌ טבלאות (Tables)\n` +
-      `❌ רשימות ממוספרות\n` +
-      `❌ ציטוטים (Blockquotes)\n` +
-      `❌ תמונות מוטמעות\n\n` +
-      `💡 השתמש ב-HTML parsing mode אם אתה צריך יותר אופציות עיצוב`
-    );
+כל התווים האלו _חייבים escape_:
 
-    await this.sleep(1500);
+\`\`\`
+_ * [ ] ( ) ~ \` > # + - = | { } . !
+\`\`\`
 
-    // Part 8: Common issues and tips
-    await this.safeSendMarkdown(chatId,
-      `*💡 חלק 7: טיפים ופתרון בעיות*\n\n` +
-      `*שגיאות נפוצות:*\n\n` +
-      `1️⃣ "Can't parse entities"\n` +
-      `→ בדוק שעשית escape לכל התווים המיוחדים\n\n` +
-      `2️⃣ קישור לא עובד\n` +
-      `→ ודא שה-URL מלא (כולל https://)\n\n` +
-      `3️⃣ בלוק קוד לא מוצג נכון\n` +
-      `→ בדוק שיש בדיוק 3 backticks בהתחלה ובסוף\n\n` +
-      `4️⃣ טקסט לא מתעצב\n` +
-      `→ ודא שאין רווחים בתוך תגי העיצוב\n\n` +
-      `*טיפ:* השתמש במעבדה שלנו (/sandbox) לתרגל Markdown רגיל!`
-    );
+כלומר: כששולחים טקסט מהבוט → כל תו כזה צריך \`\\\\\`\\.
 
-    await this.sleep(1000);
+━━━━━━━━━━━━━━━━━━━━
 
-    // Final message with quick reference
-    await this.safeSendMarkdown(chatId,
-      `📋 *סיכום מהיר:*\n\n` +
-      `\`*מודגש*\` | \`_נטוי_\` | \`__קו תחתון__\`\n` +
-      `\`~קו חוצה~\` | \`\\\`קוד\\\`\` | \`[קישור](url)\`\n\n` +
-      `❗ זכור: תווים מיוחדים דורשים backslash!\n\n` +
-      `📚 רוצה לתרגל? נסה:\n` +
-      `• /sandbox - תרגול Markdown רגיל\n` +
-      `• /cheatsheet - מדריך מהיר\n` +
-      `• /templates - תבניות מוכנות\n\n` +
-      `מקור: @moominAmir`
-    );
+✅ *דוגמאות מהחיים*
+
+*❌ דוגמה בעייתית*
+
+\`\`\`python
+await update.message.reply_text(
+    "קישור - לחץ כאן: https://example.com",
+    parse_mode="MarkdownV2"
+)
+\`\`\`
+
+נראה תמים, נכון?
+
+*✅ נכון:*
+
+\`\`\`python
+" קישור \\\\- לחץ כאן: https://example\\\\.com "
+\`\`\`
+
+━━━━━━━━━━━━━━━━━━━━
+
+*❌ גם URLs יכולים לשבור*
+
+\`\`\`markdown
+[test](https://example.com/test(1))
+\`\`\`
+
+*✅ נכון:*
+
+\`\`\`markdown
+[test](https://example.com/test\\\\(1\\\\))
+\`\`\`
+
+━━━━━━━━━━━━━━━━━━━━
+
+*❌ נקודה בסוף שורה*
+
+\`\`\`
+תודה שביקרתם.
+\`\`\`
+
+*✅ נכון:*
+
+\`\`\`
+תודה שביקרתם\\\\.
+\`\`\`
+
+━━━━━━━━━━━━━━━━━━━━
+
+*❌ מילת קוד ללא escape*
+
+\`\`\`
+\`print("hi!")\`
+\`\`\`
+
+צריך escape לסוגריים וסימן קריאה:
+
+\`\`\`
+\\\\\`print\\\\("hi\\\\!"\\\\)\\\\\`
+\`\`\`
+
+━━━━━━━━━━━━━━━━━━━━
+
+✅ *איך לכתוב בלי להילחם בזה? — שימוש ב\\-Code Blocks*
+
+טיפ: כשאפשר, השתמשו ב\\-Code Block\\.
+הוא *מנטרל את רוב הבעיות* וחוסך ESCAPE\\.
+
+\`\`\`python
+print("hello world")
+\`\`\`
+
+━━━━━━━━━━━━━━━━━━━━
+
+✅ *פתרון "מקצועי" — Auto\\-Escape*
+
+פונקציה ש\\-escape את כל מה שצריך לפני שליחה:
+
+\`\`\`python
+def escape_markdown_v2(text: str) -> str:
+    specials = r"_*[]()~\`>#+-=|{}.!"
+    for ch in specials:
+        text = text.replace(ch, "\\\\\\\\" + ch)
+    return text
+\`\`\`
+
+שימוש:
+
+\`\`\`python
+safe_text = escape_markdown_v2("קישור - לחץ כאן. (הערה)")
+await update.message.reply_text(safe_text, parse_mode="MarkdownV2")
+\`\`\`
+
+✅ עובד על הכל
+✅ פותר 99% מהבעיות
+✅ חובה אם המשתמשים שלכם מקלידים טקסט חופשי
+
+━━━━━━━━━━━━━━━━━━━━
+
+✅ *טיפים לבלוק קוד*
+
+לטלגרם יש שני סוגים:
+
+*✅ Inline:*
+
+\`\`\`
+\`value = 5\`
+\`\`\`
+
+*✅ מספר שורות:*
+
+\`\`\`
+function test() {
+    return true;
+}
+\`\`\`
+
+אם יש backticks בקוד → השתמשו בשלושה או ארבעה:
+
+\`\`\`\`
+print(\\\`hello\\\`)
+\`\`\`\`
+
+━━━━━━━━━━━━━━━━━━━━
+
+✅ *קישורים עם טקסט עברי*
+
+*✅ נכון:*
+
+\`\`\`
+[לחץ כאן](https://example.com)
+\`\`\`
+
+*✅ עם פרמטרים:*
+
+\`\`\`
+[פתיחה](https://example.com/test\\\\?id\\\\=5\\\\&ref\\\\=abc)
+\`\`\`
+
+━━━━━━━━━━━━━━━━━━━━
+
+✅ *תבנית הודעה מעוצבת מורכבת*
+
+\`\`\`python
+msg = (
+    "*✅ ביצוע הושלם*\\\\n"
+    "_הקובץ נשמר בהצלחה_\\\\n"
+    "[קישור לצפייה](https://example\\\\.com/view)"
+)
+await update.message.reply_text(msg, parse_mode="MarkdownV2")
+\`\`\`
+
+━━━━━━━━━━━━━━━━━━━━
+
+✅ *מה עובד בלי MarkdownV2?*
+
+החלק הזה מעניין משתמשים רגילים:
+
+✔ Bold
+✔ Italic
+✔ Link
+✔ Strikethrough
+✔ Inline code
+✔ Code block
+
+כולם עובדים מתוך העורך המובנה של טלגרם — בלי שום Markdown\\.
+
+━━━━━━━━━━━━━━━━━━━━
+
+✅ *סיכום זהב למפתחים*
+
+\`\`\`
+| פעולה                 | צריך MarkdownV2? | צריך ESCAPE?  |
+|----------------------|-----------------|--------------|
+| הודעות טקסט בסיסיות   | לא              | לא           |
+| Bold/Italic          | כן              | כן           |
+| קישורים              | כן              | לפעמים       |
+| קוד                  | כן              | אם יש תווים   |
+| טקסט חופשי מהמשתמש    | כן              | מומלץ Auto-Escape |
+\`\`\`
+
+━━━━━━━━━━━━━━━━━━━━
+
+💡 רוצה לתרגל Markdown רגיל? נסה:
+• /sandbox \\- מעבדת תרגול
+• /cheatsheet \\- מדריך מהיר
+• /templates \\- תבניות מוכנות
+
+מקור: @moominAmir`;
   }
 
   // ========================================
