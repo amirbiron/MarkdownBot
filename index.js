@@ -151,13 +151,6 @@ if (bot && commandHandler && messageHandler) {
     }
   });
 
-  // Handle /markdown_guide command (Telegram Markdown guide)
-  bot.onText(/\/markdown_guide/, async (msg) => {
-    if (await maintenanceMiddleware(msg, () => true)) {
-      commandHandler.handleMarkdownGuide(msg);
-    }
-  });
-
   // Handle /templates command
   bot.onText(/\/templates/, async (msg) => {
     if (await maintenanceMiddleware(msg, () => true)) {
