@@ -45,7 +45,6 @@ class MessageHandler {
       '📊 התקדמות',
       '📋 מדריך מהיר',
       '📚 תבניות',
-      '📖 מדריך טלגרם',
       '❓ עזרה'
     ];
 
@@ -134,9 +133,6 @@ class MessageHandler {
       return;
     } else if (text === '📚 תבניות') {
       await cmdHandler.handleTemplates(msg);
-      return;
-    } else if (text === '📖 מדריך טלגרם') {
-      await cmdHandler.handleMarkdownGuide(msg);
       return;
     } else if (text === '❓ עזרה') {
       await cmdHandler.handleHelp(msg);
