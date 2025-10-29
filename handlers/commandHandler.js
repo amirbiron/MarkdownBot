@@ -760,10 +760,9 @@ await update.message.reply_text(msg, parse_mode="MarkdownV2")
       message += `\n\n👥 *יש ${communityTemplates.length} תבניות קהילתיות!*`;
     }
 
-    message += `\n\n💡 רוצה להוסיף תבנית משלך? שלח /submit_template`;
+    message += `\n\n💡 רוצה להוסיף תבנית משלך? שלח \`/submit_template\``;
 
-    await this.bot.sendMessage(chatId, message, {
-      parse_mode: 'Markdown',
+    await this.safeSendMarkdown(chatId, message, {
       reply_markup: {
         inline_keyboard: keyboard
       }
