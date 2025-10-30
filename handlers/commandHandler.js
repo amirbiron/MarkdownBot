@@ -405,9 +405,8 @@ class CommandHandler {
     const guide = this.buildTelegramDevGuide();
 
     try {
-      // Send in smaller, safe-to-parse sections to avoid MarkdownV2 pitfalls.
-      // For two known-problematic sections, send code blocks as HTML <pre> for stability.
-      await this.sendTelegramGuideWithHtmlCodeBlocks(chatId, guide);
+      // Send as compact HTML chunks with stable <pre><code> blocks to reduce message count.
+      await this.sendTelegramGuideAsHtmlChunks(chatId, guide);
     } catch (error) {
       console.error('Error sending Telegram dev guide:', error);
       // Final fallback: send as plain text without MarkdownV2 escapes
@@ -721,6 +720,86 @@ await update.message.reply_text(msg, parse_mode="MarkdownV2")
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;');
+  }
+
+  /** Strip HTML tags for plain-text fallback */
+  stripHtmlTags(html) {
+    if (!html) return '';
+    return String(html).replace(/<[^>]*>/g, '');
+  }
+
+  /** Safely send HTML message with fallback to plain text */
+  async safeSendHtml(chatId, html, options = {}) {
+    try {
+      return await this.bot.sendMessage(chatId, html, {
+        parse_mode: 'HTML',
+        disable_web_page_preview: true,
+        ...options,
+      });
+    } catch (err) {
+      const desc = String(err?.response?.body?.description || err?.message || '').toLowerCase();
+      if (desc.includes('parse') || desc.includes('entity')) {
+        const plain = this.stripHtmlTags(html)
+          .replace(/&lt;/g, '<')
+          .replace(/&gt;/g, '>')
+          .replace(/&amp;/g, '&');
+        return await this.bot.sendMessage(chatId, plain, { disable_web_page_preview: true, ...options });
+      }
+      throw err;
+    }
+  }
+
+  /** Render a MarkdownV2 section into HTML with stable code blocks */
+  renderGuideSectionToHtml(sectionText) {
+    const source = this.unescapeMarkdownV2(sectionText || '');
+    const fenceRegex = /```[a-zA-Z0-9_+#-]*\n([\s\S]*?)\n```/g;
+    let result = '';
+    let lastIndex = 0;
+    let match;
+
+    while ((match = fenceRegex.exec(source)) !== null) {
+      const before = source.slice(lastIndex, match.index);
+      if (before) {
+        result += this.escapeHtmlEntities(before).replace(/\n/g, '<br>');
+      }
+      const codeContent = match[1] || '';
+      result += `<pre><code>${this.escapeHtmlEntities(codeContent)}</code></pre>`;
+      lastIndex = fenceRegex.lastIndex;
+    }
+
+    // Append remaining non-code text
+    const tail = source.slice(lastIndex);
+    if (tail) {
+      result += this.escapeHtmlEntities(tail).replace(/\n/g, '<br>');
+    }
+    return result;
+  }
+
+  /**
+   * Send the guide as a few compact HTML messages, grouping multiple sections per message
+   * while converting fenced code blocks into <pre><code> for reliability.
+   */
+  async sendTelegramGuideAsHtmlChunks(chatId, fullText) {
+    const delimiter = '\n━━━━━━━━━━━━━━━━━━━━\n';
+    const parts = fullText.split(delimiter);
+    const maxLen = 3500; // leave headroom under Telegram's ~4096 char limit
+
+    let current = '';
+    for (let i = 0; i < parts.length; i++) {
+      const section = i === 0 ? parts[i] : '━━━━━━━━━━━━━━━━━━━━\n\n' + parts[i];
+      const htmlSection = this.renderGuideSectionToHtml(section);
+
+      if (current && (current.length + 2 + htmlSection.length) > maxLen) {
+        await this.safeSendHtml(chatId, current);
+        await this.sleep(200);
+        current = htmlSection;
+      } else {
+        current += (current ? '<br><br>' : '') + htmlSection;
+      }
+    }
+    if (current) {
+      await this.safeSendHtml(chatId, current);
+    }
   }
 
   /** Send the "dangerous characters" section with a robust HTML code block */
