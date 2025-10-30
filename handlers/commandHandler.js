@@ -405,8 +405,9 @@ class CommandHandler {
     const guide = this.buildTelegramDevGuide();
 
     try {
-      // Send in smaller, safe-to-parse sections to avoid MarkdownV2 pitfalls
-      await this.sendMarkdownV2InSections(chatId, guide);
+      // Send in smaller, safe-to-parse sections to avoid MarkdownV2 pitfalls.
+      // For two known-problematic sections, send code blocks as HTML <pre> for stability.
+      await this.sendTelegramGuideWithHtmlCodeBlocks(chatId, guide);
     } catch (error) {
       console.error('Error sending Telegram dev guide:', error);
       // Final fallback: send as plain text without MarkdownV2 escapes
@@ -680,6 +681,107 @@ await update.message.reply_text(msg, parse_mode="MarkdownV2")
     if (!text) return text;
     // Remove backslash before any MarkdownV2 special char
     return text.replace(/\\([_*\[\]()~`>#\+\-=|{}\.!\\])/g, '$1');
+  }
+
+  /**
+   * Send the Telegram developer guide while forcing two specific sections
+   * to render code blocks via HTML (<pre><code>) for maximum stability.
+   * Other sections continue to use MarkdownV2.
+   */
+  async sendTelegramGuideWithHtmlCodeBlocks(chatId, fullText) {
+    const delimiter = '\n━━━━━━━━━━━━━━━━━━━━\n';
+    const parts = fullText.split(delimiter);
+
+    for (let i = 0; i < parts.length; i++) {
+      const chunk = i === 0 ? parts[i] : '━━━━━━━━━━━━━━━━━━━━\n\n' + parts[i];
+
+      // Detect and specially render the "תווים מסוכנים" section
+      if (chunk.includes('✅ *תווים מסוכנים*')) {
+        await this.sendDangerousCharsSection(chatId);
+        await this.sleep(200);
+        continue;
+      }
+
+      // Detect and specially render the Auto-Escape section
+      if (chunk.includes('Auto\\-Escape') || chunk.includes('escape_markdown_v2')) {
+        await this.sendAutoEscapeSection(chatId);
+        await this.sleep(200);
+        continue;
+      }
+
+      await this.safeSendMarkdownV2(chatId, chunk);
+      await this.sleep(200);
+    }
+  }
+
+  /** Escape minimal HTML entities to safely send via parse_mode=HTML */
+  escapeHtmlEntities(text) {
+    if (!text) return '';
+    return String(text)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
+  /** Send the "dangerous characters" section with a robust HTML code block */
+  async sendDangerousCharsSection(chatId) {
+    // Header and intro (MarkdownV2)
+    const head = [
+      '━━━━━━━━━━━━━━━━━━━━',
+      '',
+      '✅ *תווים מסוכנים*',
+      '',
+      'כל התווים האלו _חייבים escape_:'
+    ].join('\n');
+    await this.safeSendMarkdownV2(chatId, head);
+
+    // Code block as HTML <pre>
+    const codeLine = '_ * [ ] ( ) ~ ` > # + - = | { } . !';
+    const html = `<pre><code>${this.escapeHtmlEntities(codeLine)}</code></pre>`;
+    await this.bot.sendMessage(chatId, html, { parse_mode: 'HTML', disable_web_page_preview: true });
+  }
+
+  /** Send the Auto-Escape section (function and usage) with HTML code blocks */
+  async sendAutoEscapeSection(chatId) {
+    // Header and intro (MarkdownV2)
+    const head = [
+      '━━━━━━━━━━━━━━━━━━━━',
+      '',
+      '✅ *פתרון "מקצועי" — Auto\-Escape*',
+      '',
+      'פונקציה ש\-escape את כל מה שצריך לפני שליחה:'
+    ].join('\n');
+    await this.safeSendMarkdownV2(chatId, head);
+
+    // Function code block
+    const fnCode = [
+      'def escape_markdown_v2(text: str) -> str:',
+      '    specials = r"_*[]()~`>#+-=|{}.!"',
+      '    for ch in specials:',
+      '        text = text.replace(ch, "\\\\" + ch)',
+      '    return text'
+    ].join('\n');
+    const fnHtml = `<pre><code>${this.escapeHtmlEntities(fnCode)}</code></pre>`;
+    await this.bot.sendMessage(chatId, fnHtml, { parse_mode: 'HTML', disable_web_page_preview: true });
+
+    // Usage heading
+    await this.safeSendMarkdownV2(chatId, 'שימוש:');
+
+    // Usage code block
+    const usageCode = [
+      'safe_text = escape_markdown_v2("קישור - לחץ כאן. (הערה)")',
+      'await update.message.reply_text(safe_text, parse_mode="MarkdownV2")'
+    ].join('\n');
+    const usageHtml = `<pre><code>${this.escapeHtmlEntities(usageCode)}</code></pre>`;
+    await this.bot.sendMessage(chatId, usageHtml, { parse_mode: 'HTML', disable_web_page_preview: true });
+
+    // Bullets (MarkdownV2)
+    const bullets = [
+      '✅ עובד על הכל',
+      '✅ פותר 99% מהבעיות',
+      '✅ חובה אם המשתמשים שלכם מקלידים טקסט חופשי'
+    ].join('\n');
+    await this.safeSendMarkdownV2(chatId, bullets);
   }
 
   /**
