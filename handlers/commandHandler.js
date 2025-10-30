@@ -782,7 +782,7 @@ await update.message.reply_text(msg, parse_mode="MarkdownV2")
   async sendTelegramGuideAsHtmlChunks(chatId, fullText) {
     const delimiter = '\n━━━━━━━━━━━━━━━━━━━━\n';
     const parts = fullText.split(delimiter);
-    const maxLen = 3500; // leave headroom under Telegram's ~4096 char limit
+    const maxLen = 4000; // larger chunks, still under Telegram's ~4096 char limit
 
     let current = '';
     for (let i = 0; i < parts.length; i++) {
