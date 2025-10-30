@@ -405,8 +405,8 @@ class CommandHandler {
     const guide = this.buildTelegramDevGuide();
 
     try {
-      // Send as compact HTML chunks with stable <pre><code> blocks to reduce message count.
-      await this.sendTelegramGuideAsHtmlChunks(chatId, guide);
+      // Send in smaller, safe-to-parse sections; two sections use HTML code blocks.
+      await this.sendTelegramGuideWithHtmlCodeBlocks(chatId, guide);
     } catch (error) {
       console.error('Error sending Telegram dev guide:', error);
       // Final fallback: send as plain text without MarkdownV2 escapes
@@ -690,50 +690,27 @@ await update.message.reply_text(msg, parse_mode="MarkdownV2")
   async sendTelegramGuideWithHtmlCodeBlocks(chatId, fullText) {
     const delimiter = '\n━━━━━━━━━━━━━━━━━━━━\n';
     const parts = fullText.split(delimiter);
-    const mdMaxLen = 3800; // keep MarkdownV2 chunks safely below limit
-
-    let mdBuffer = '';
-
-    const flushMdBuffer = async () => {
-      if (mdBuffer) {
-        await this.safeSendMarkdownV2(chatId, mdBuffer);
-        await this.sleep(200);
-        mdBuffer = '';
-      }
-    };
 
     for (let i = 0; i < parts.length; i++) {
       const chunk = i === 0 ? parts[i] : '━━━━━━━━━━━━━━━━━━━━\n\n' + parts[i];
 
-      const isDangerous = chunk.includes('✅ *תווים מסוכנים*');
-      const isAutoEscape = chunk.includes('Auto\\-Escape') || chunk.includes('escape_markdown_v2');
-
-      if (isDangerous || isAutoEscape) {
-        // First flush any accumulated MarkdownV2 content
-        await flushMdBuffer();
-        // Then send the special section as a single HTML message
-        if (isDangerous) {
-          await this.sendDangerousCharsSection(chatId);
-        } else {
-          await this.sendAutoEscapeSection(chatId);
-        }
+      // Detect and specially render the "תווים מסוכנים" section
+      if (chunk.includes('✅ *תווים מסוכנים*')) {
+        await this.sendDangerousCharsSection(chatId);
         await this.sleep(200);
         continue;
       }
 
-      // Accumulate MarkdownV2 sections into fewer messages
-      if (!mdBuffer) {
-        mdBuffer = chunk;
-      } else if ((mdBuffer.length + 2 + chunk.length) > mdMaxLen) {
-        await flushMdBuffer();
-        mdBuffer = chunk;
-      } else {
-        mdBuffer += '\n\n' + chunk;
+      // Detect and specially render the Auto-Escape section
+      if (chunk.includes('Auto\\-Escape') || chunk.includes('escape_markdown_v2')) {
+        await this.sendAutoEscapeSection(chatId);
+        await this.sleep(200);
+        continue;
       }
-    }
 
-    // Flush remaining MarkdownV2 content
-    await flushMdBuffer();
+      await this.safeSendMarkdownV2(chatId, chunk);
+      await this.sleep(200);
+    }
   }
 
   /** Escape minimal HTML entities to safely send via parse_mode=HTML */
