@@ -32,6 +32,8 @@ class MessageHandler {
 
     if (!text) return;
 
+    const normalizedText = this.reconstructMarkdownFromEntities(text, msg.entities);
+
     this.db.updateLastActive(userId);
 
     // Get user's current mode
@@ -64,19 +66,19 @@ class MessageHandler {
 
     if (mode.current_mode === 'sandbox') {
       // User is in sandbox mode - render their markdown
-      await this.handleSandboxInput(chatId, userId, text);
+      await this.handleSandboxInput(chatId, userId, normalizedText);
     } else if (mode.current_mode === 'training') {
       // User is in training mode - validate their answer
-      await this.handleTrainingAnswer(chatId, userId, text, mode);
+      await this.handleTrainingAnswer(chatId, userId, normalizedText, mode);
     } else if (mode.current_mode === 'submitting_template') {
       // User is submitting a template - collect input step by step
-      await this.handleTemplateSubmissionInput(chatId, userId, text, mode);
+      await this.handleTemplateSubmissionInput(chatId, userId, normalizedText, mode);
     } else if (mode.current_mode === 'rejecting_template') {
       // Admin is rejecting a template - collect rejection reason
-      await this.handleRejectTemplateWithReason(chatId, userId, text, mode);
+      await this.handleRejectTemplateWithReason(chatId, userId, normalizedText, mode);
     } else {
       // Normal conversation mode
-      await this.handleNormalMessage(chatId, userId, text);
+      await this.handleNormalMessage(chatId, userId, normalizedText);
     }
   }
 
@@ -925,6 +927,7 @@ class MessageHandler {
       `🎯 *אימון ממוקד: ${topicName}*\n\n` +
       `תקבל ${Math.min(challenges.length, 5)} אתגרים ברמות קושי הולכות וגדלות.\n\n` +
       `💡 אפשר לבקש רמז, לדלג או לצאת בכל שלב.\n\n` +
+      `✏️ טיפ קטן: אני מזהה גם תשובות שמעוצבות על ידי טלגרם, ואם התשובה שלך כוללת סימוני Markdown – עטוף את כל ההודעה בתוך בלוק קוד עם שלושה backticks בתחילה ובסוף כדי לשמור על הסימנים.\n\n` +
       `בואו נתחיל! 🚀`,
       { parse_mode: 'Markdown' }
     );
@@ -1727,6 +1730,143 @@ class MessageHandler {
   // ========================================
   // Helper Functions
   // ========================================
+  reconstructMarkdownFromEntities(text, entities = []) {
+    if (!text || !Array.isArray(entities) || entities.length === 0) {
+      return text;
+    }
+
+    const openMap = Object.create(null);
+    const closeMap = Object.create(null);
+
+    const getPriority = (type) => {
+      switch (type) {
+        case 'pre':
+          return 0;
+        case 'code':
+          return 10;
+        case 'bold':
+          return 20;
+        case 'italic':
+          return 30;
+        case 'underline':
+          return 40;
+        case 'strikethrough':
+          return 50;
+        case 'text_link':
+        case 'text_mention':
+          return 60;
+        case 'spoiler':
+          return 70;
+        default:
+          return 100;
+      }
+    };
+
+    for (const entity of entities) {
+      if (!entity || typeof entity.offset !== 'number' || typeof entity.length !== 'number') {
+        continue;
+      }
+
+      const start = entity.offset;
+      const end = entity.offset + entity.length;
+
+      if (start < 0 || end > text.length || start >= end) {
+        continue;
+      }
+
+      let openWrapper = '';
+      let closeWrapper = '';
+
+      switch (entity.type) {
+        case 'bold':
+          openWrapper = '**';
+          closeWrapper = '**';
+          break;
+        case 'italic':
+          openWrapper = '*';
+          closeWrapper = '*';
+          break;
+        case 'underline':
+          openWrapper = '__';
+          closeWrapper = '__';
+          break;
+        case 'strikethrough':
+          openWrapper = '~~';
+          closeWrapper = '~~';
+          break;
+        case 'code':
+          openWrapper = '`';
+          closeWrapper = '`';
+          break;
+        case 'pre': {
+          const language = entity.language ? String(entity.language).trim() : '';
+          openWrapper = '```' + (language || '') + '\n';
+          closeWrapper = '\n```';
+          break;
+        }
+        case 'spoiler':
+          openWrapper = '||';
+          closeWrapper = '||';
+          break;
+        case 'text_link':
+          if (entity.url) {
+            openWrapper = '[';
+            closeWrapper = `](${entity.url})`;
+          }
+          break;
+        case 'text_mention':
+          if (entity.user && entity.user.id) {
+            openWrapper = '[';
+            closeWrapper = `](tg://user?id=${entity.user.id})`;
+          }
+          break;
+        default:
+          break;
+      }
+
+      if (!openWrapper && !closeWrapper) {
+        continue;
+      }
+
+      const priority = getPriority(entity.type);
+
+      if (!openMap[start]) openMap[start] = [];
+      if (!closeMap[end]) closeMap[end] = [];
+
+      openMap[start].push({ text: openWrapper, priority });
+      closeMap[end].push({ text: closeWrapper, priority });
+    }
+
+    let result = '';
+
+    for (let i = 0; i < text.length; i++) {
+      if (closeMap[i]) {
+        closeMap[i].sort((a, b) => b.priority - a.priority);
+        for (const closer of closeMap[i]) {
+          result += closer.text;
+        }
+      }
+
+      if (openMap[i]) {
+        openMap[i].sort((a, b) => a.priority - b.priority);
+        for (const opener of openMap[i]) {
+          result += opener.text;
+        }
+      }
+
+      result += text[i];
+    }
+
+    if (closeMap[text.length]) {
+      closeMap[text.length].sort((a, b) => b.priority - a.priority);
+      for (const closer of closeMap[text.length]) {
+        result += closer.text;
+      }
+    }
+
+    return result;
+  }
+
   sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
