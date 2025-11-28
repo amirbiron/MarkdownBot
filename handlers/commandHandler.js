@@ -1131,12 +1131,26 @@ await update.message.reply_text(msg, parse_mode="MarkdownV2")
         parse_mode: 'Markdown',
         reply_markup: {
           inline_keyboard: [
-            [{ text: '✨ עיצוב טקסט', callback_data: 'train_topic_text-formatting' }],
-            [{ text: '📊 טבלאות', callback_data: 'train_topic_tables' }],
-            [{ text: '🔗 קישורים ותמונות', callback_data: 'train_topic_links-images' }],
-            [{ text: '📋 רשימות מתקדמות', callback_data: 'train_topic_advanced-lists' }],
-            [{ text: '🐛 איתור באגים', callback_data: 'train_topic_bug-detection' }],
-            [{ text: '📈 דיאגרמות Mermaid', callback_data: 'train_topic_mermaid' }]
+            [
+              { text: '✨ עיצוב טקסט', callback_data: 'train_topic_text-formatting' },
+              { text: '📊 טבלאות', callback_data: 'train_topic_tables' }
+            ],
+            [
+              { text: '🔗 קישורים ותמונות', callback_data: 'train_topic_links-images' },
+              { text: '📋 רשימות מתקדמות', callback_data: 'train_topic_advanced-lists' }
+            ],
+            [
+              { text: '💻 קוד וסינטקס', callback_data: 'train_topic_code-blocks' },
+              { text: '🛡️ תווים מיוחדים', callback_data: 'train_topic_escaping' }
+            ],
+            [
+              { text: '🗨️ ציטוטים והתראות', callback_data: 'train_topic_quotes-alerts' },
+              { text: '📐 HTML בתוך Markdown', callback_data: 'train_topic_html-markdown' }
+            ],
+            [
+              { text: '📈 דיאגרמות Mermaid', callback_data: 'train_topic_mermaid' },
+              { text: '🐛 איתור באגים', callback_data: 'train_topic_bug-detection' }
+            ]
           ]
         }
       }
