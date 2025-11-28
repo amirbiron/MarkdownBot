@@ -385,6 +385,198 @@ const challenges = {
       wrongFeedback: 'זכור: sequenceDiagram, participant שם, והודעות עם ->>',
       example: '```mermaid\nsequenceDiagram\n    participant U as משתמש\n    participant S as שרת\n    participant DB as מסד נתונים\n    U->>S: בקשת התחברות\n    S->>DB: בדיקת פרטים\n    DB->>S: אישור\n    S->>U: הצלחה\n```'
     }
+  ],
+
+  // ====================================
+  // 💻 Code Blocks - קוד וסינטקס
+  // ====================================
+  'code-blocks': [
+    {
+      id: 'code_easy_1',
+      topic: 'code-blocks',
+      difficulty: 'easy',
+      question: '💻 *אתגר קל - קוד בתוך שורה*\n\nכתוב את המשפט הבא, וסמן את הפקודה כקוד:\nכדי לראות את הסטטוס, השתמש בפקודה git status',
+      validationRules: {
+        mustInclude: ['`git status`'],
+        pattern: /`git status`/
+      },
+      hint: 'השתמש ב-Backticks (`) סביב הפקודה',
+      correctFeedback: 'מצוין! שימוש ב-Backticks הוא הדרך להציג קוד בתוך שורה.',
+      wrongFeedback: 'זכור לעטוף את הפקודה בגרש הפוך (`).',
+      example: 'כדי לראות את הסטטוס, השתמש בפקודה `git status`'
+    },
+    {
+      id: 'code_medium_1',
+      topic: 'code-blocks',
+      difficulty: 'medium',
+      question: '💻 *אתגר בינוני - בלוק קוד*\n\nצור בלוק קוד בשפת Python שמדפיס "Hello World".',
+      validationRules: {
+        mustInclude: ['```python', 'print("Hello World")', '```'],
+        minLines: 3
+      },
+      hint: 'התחל עם שלוש backticks ושם השפה (python)',
+      correctFeedback: 'מעולה! יצרת בלוק קוד עם הגדרת שפה.',
+      wrongFeedback: 'השתמש ב-```python בהתחלה ו-``` בסוף.',
+      example: '```python\nprint("Hello World")\n```'
+    },
+    {
+      id: 'code_hard_1',
+      topic: 'code-blocks',
+      difficulty: 'hard',
+      question: '💻 *אתגר מתקדם - בלוק Diff*\n\nצור בלוק קוד שמציג שינויים (Diff):\n- שורה שנמחקה: hello world\n- שורה שנוספה: hello universe',
+      validationRules: {
+        mustInclude: ['```diff', '- hello world', '+ hello universe', '```'],
+        minLines: 4
+      },
+      hint: 'השתמש ב-```diff, מינוס (-) למחיקה ופלוס (+) להוספה',
+      correctFeedback: 'מדהים! Diff הוא כלי חשוב להצגת שינויים בקוד.',
+      wrongFeedback: 'זכור: שפת diff, - למחיקה, + להוספה.',
+      example: '```diff\n- hello world\n+ hello universe\n```'
+    }
+  ],
+
+  // ====================================
+  // 🛡️ Escaping - תווים מיוחדים
+  // ====================================
+  'escaping': [
+    {
+      id: 'escape_easy_1',
+      topic: 'escaping',
+      difficulty: 'easy',
+      question: '🛡️ *אתגר קל - ביטול עיצוב*\n\nכתוב את המשפט: "השתמש בתו * כדי לציין שדה חובה"\nודא שהכוכבית מוצגת כרגיל ולא כנטוי.',
+      validationRules: {
+        mustInclude: ['\\*', '*'],
+        pattern: /\\\*/
+      },
+      hint: 'השתמש בלוכסן שמאלי (\\) לפני הכוכבית',
+      correctFeedback: 'נכון! הלוכסן השמאלי מבטל את המשמעות המיוחדת של התו.',
+      wrongFeedback: 'השתמש ב-\\* כדי להציג כוכבית רגילה.',
+      example: 'השתמש בתו \\* כדי לציין שדה חובה'
+    },
+    {
+      id: 'escape_medium_1',
+      topic: 'escaping',
+      difficulty: 'medium',
+      question: '🛡️ *אתגר בינוני - הצגת קישור*\n\nהצג את התחביר של הקישור הבא כקוד (כך שלא יהיה לחיץ):\n[Google](https://google.com)',
+      validationRules: {
+        mustInclude: ['`[Google](https://google.com)`'],
+        pattern: /`\[Google\]\(https:\/\/google\.com\)`/
+      },
+      hint: 'עטוף את הקישור כולו ב-Backticks (` `)',
+      correctFeedback: 'יפה! עטיפה ב-code מונעת מהקישור להיות פעיל.',
+      wrongFeedback: 'עטוף את הכל בגרש הפוך (`).',
+      example: '`[Google](https://google.com)`'
+    },
+    {
+      id: 'escape_hard_1',
+      topic: 'escaping',
+      difficulty: 'hard',
+      question: '🛡️ *אתגר מתקדם - שם קובץ*\n\nכתוב את שם הקובץ `my_final_script_v2.py` בתוך משפט.\nודא שהקווים התחתונים לא גורמים להטיית הטקסט.',
+      validationRules: {
+        mustInclude: ['`my_final_script_v2.py`'],
+         pattern: /`my_final_script_v2\.py`/
+      },
+      hint: 'שימוש ב-Backticks הוא הדרך הטובה ביותר לשמות קבצים',
+      correctFeedback: 'מצוין! קוד בתוך שורה פותר בעיות של תווים מיוחדים בשמות קבצים.',
+      wrongFeedback: 'עטוף את שם הקובץ ב-` `.',
+      example: 'הקובץ הוא `my_final_script_v2.py`'
+    }
+  ],
+
+  // ====================================
+  // 🗨️ Quotes & Alerts - ציטוטים והתראות
+  // ====================================
+  'quotes-alerts': [
+    {
+      id: 'quote_easy_1',
+      topic: 'quotes-alerts',
+      difficulty: 'easy',
+      question: '🗨️ *אתגר קל - ציטוט*\n\nצור ציטוט עם הטקסט: "זהו שינוי משמעותי בפרויקט"',
+      validationRules: {
+        mustInclude: ['> זהו שינוי', '>'],
+        hasBlockquote: true
+      },
+      hint: 'השתמש בסימן > בתחילת השורה',
+      correctFeedback: 'מעולה! > יוצר ציטוט.',
+      wrongFeedback: 'התחל את השורה ב->.',
+      example: '> זהו שינוי משמעותי בפרויקט'
+    },
+    {
+      id: 'quote_medium_1',
+      topic: 'quotes-alerts',
+      difficulty: 'medium',
+      question: '🗨️ *אתגר בינוני - ציטוט מקונן*\n\nצור ציטוט בתוך ציטוט (תגובה לתגובה) עם הטקסט: "אני מסכים עם זה"',
+      validationRules: {
+        mustInclude: ['>>', 'אני מסכים'],
+        pattern: />\s*>/
+      },
+      hint: 'השתמש בפעמיים > (>>)',
+      correctFeedback: 'יפה! ציטוט מקונן שימושי לדיונים.',
+      wrongFeedback: 'השתמש ב->> לציטוט כפול.',
+      example: '>> אני מסכים עם זה'
+    },
+    {
+      id: 'quote_hard_1',
+      topic: 'quotes-alerts',
+      difficulty: 'hard',
+      question: '🗨️ *אתגר מתקדם - התראת GitHub*\n\nצור התראת Warning בסגנון GitHub עם הטקסט: "יש לבדוק תאימות לאחור"',
+      validationRules: {
+        mustInclude: ['> [!WARNING]', 'יש לבדוק'],
+        pattern: />\s*\[!WARNING\]/
+      },
+      hint: 'התחביר הוא > [!WARNING] ואז הטקסט',
+      correctFeedback: 'מדהים! Alerts הם דרך מעולה להדגיש מידע ב-GitHub.',
+      wrongFeedback: 'השתמש בפורמט: > [!WARNING] טקסט',
+      example: '> [!WARNING] יש לבדוק תאימות לאחור'
+    }
+  ],
+
+  // ====================================
+  // 📐 HTML in Markdown - שילוב HTML
+  // ====================================
+  'html-markdown': [
+    {
+      id: 'html_easy_1',
+      topic: 'html-markdown',
+      difficulty: 'easy',
+      question: '📐 *אתגר קל - טקסט תחתי*\n\nכתוב את הנוסחה הכימית H₂O כאשר ה-2 הוא בכתב תחתי (Subscript).',
+      validationRules: {
+        mustInclude: ['H<sub>2</sub>O', '<sub>', '</sub>'],
+        pattern: /<sub>2<\/sub>/
+      },
+      hint: 'השתמש בתגיות <sub>...</sub>',
+      correctFeedback: 'נכון! HTML מאפשר עיצובים ש-Markdown לא תומך בהם ישירות.',
+      wrongFeedback: 'עטוף את ה-2 ב-<sub> ו-</sub>.',
+      example: 'H<sub>2</sub>O'
+    },
+    {
+      id: 'html_medium_1',
+      topic: 'html-markdown',
+      difficulty: 'medium',
+      question: '📐 *אתגר בינוני - טקסט נסתר*\n\nצור "אקורדיון" (Details) עם הכותרת "פרטים נוספים" והתוכן "מידע מוסתר".',
+      validationRules: {
+        mustInclude: ['<details>', '<summary>', '</details>', '</summary>'],
+        pattern: /<details>.*<summary>.*<\/summary>.*<\/details>/s
+      },
+      hint: 'השתמש ב-<details> שעוטף את הכל, ובתוכו <summary> לכותרת',
+      correctFeedback: 'מעולה! זה כלי מצוין להסתרת מידע טכני ארוך.',
+      wrongFeedback: 'ודא שיש לך <details> ובתוכו <summary>.',
+      example: '<details>\n<summary>פרטים נוספים</summary>\nמידע מוסתר\n</details>'
+    },
+    {
+      id: 'html_hard_1',
+      topic: 'html-markdown',
+      difficulty: 'hard',
+      question: '📐 *אתגר מתקדם - יישור למרכז*\n\nמרכז את הטקסט "טקסט במרכז" באמצעות HTML.',
+      validationRules: {
+        mustInclude: ['align="center"', 'div'],
+        pattern: /<div.*align="center".*>/
+      },
+      hint: 'השתמש ב-<div align="center">',
+      correctFeedback: 'מצוין! שילוב HTML נותן שליטה מלאה על העיצוב.',
+      wrongFeedback: 'השתמש ב-div עם align="center".',
+      example: '<div align="center">טקסט במרכז</div>'
+    }
   ]
 };
 
@@ -412,7 +604,11 @@ function getTopicDisplayName(topic) {
     'advanced-lists': '📋 רשימות מתקדמות',
     'mermaid': '📈 דיאגרמות Mermaid',
     'text-formatting': '✨ עיצוב טקסט',
-    'bug-detection': '🐛 איתור באגים'
+    'bug-detection': '🐛 איתור באגים',
+    'code-blocks': '💻 קוד וסינטקס',
+    'escaping': '🛡️ תווים מיוחדים',
+    'quotes-alerts': '🗨️ ציטוטים והתראות',
+    'html-markdown': '📐 HTML בתוך Markdown'
   };
   return names[topic] || topic;
 }
@@ -471,6 +667,16 @@ function validateAnswer(challenge, userAnswer) {
       return {
         isCorrect: false,
         reason: 'חסר בלוק mermaid תקין'
+      };
+    }
+  }
+
+  // Check for blockquote
+  if (rules.hasBlockquote) {
+    if (!answer.trim().startsWith('>')) {
+      return {
+        isCorrect: false,
+        reason: 'חייב להתחיל בסימן >'
       };
     }
   }
