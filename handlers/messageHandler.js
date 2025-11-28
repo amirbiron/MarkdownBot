@@ -448,7 +448,7 @@ class MessageHandler {
           '`![טקסט חלופי אמיתי](https://cdn.example.com/team.png)`\n\n' +
           '💡 כתוב טקסט שמתאר מה רואים בתמונה (נגישות!)\n\n' +
           '👇 לחץ על הכפתור להעתקת דוגמה',
-        example: '![לוח משימות שבועי](https://images.unsplash.com/photo-1556155092-490a1ba16284?auto=format&fit=crop&w=800&q=80)\n![צילום מסך של האפליקציה](https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=800&q=80)'
+        example: '![לוח משימות שבועי](https://placehold.co/600x320?text=Weekly+Tasks)\n![צילום מסך של האפליקציה](https://placehold.co/600x360?text=App+Screen)'
       },
       tables: {
         title: '📊 טבלאות',
@@ -515,22 +515,42 @@ class MessageHandler {
       lists: '- פירות\n- ירקות\n  - עגבניה\n  - מלפפון\n\n1. ראשון\n2. שני\n3. שלישי',
       links: '[גוגל](https://google.com)\n<https://github.com>\n\n[המדריך שלי][guide]\n[guide]: https://example.com',
       quotes: '> זה ציטוט חשוב\n> המשך הציטוט\n\n> ציטוט ראשי\n>> ציטוט בתוך ציטוט',
-      code: 'השתמש בפונקציה `console.log()` להדפסה.\n\n```javascript\nfunction greet(name) {\n  return `Hello, ${name}!`;\n}\n```',
-      images: '![לוח משימות שבועי](https://images.unsplash.com/photo-1556155092-490a1ba16284?auto=format&fit=crop&w=800&q=80)\n![צילום מסך של האפליקציה](https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=800&q=80)',
+      code: {
+        preview: 'השתמש בפונקציה `console.log()` להדפסה.',
+        copy: '```javascript\nfunction greet(name) {\n  return `Hello, ${name}!`;\n}\n```'
+      },
+      images: {
+        copy: '![לוח משימות שבועי](https://placehold.co/600x320?text=Weekly+Tasks)\n![צילום מסך של האפליקציה](https://placehold.co/600x360?text=App+Screen)'
+      },
       tables: '| שם | גיל | עיר |\n|:---|:---:|---:|\n| יוסי | 25 | תל אביב |\n| שרה | 30 | ירושלים |',
       tasks: '- [x] למדתי Markdown\n- [x] תרגלתי עם הבוט\n- [ ] בניתי פרויקט משלי',
       lines: 'חלק ראשון\n\n---\n\nחלק שני\n\n***\n\nחלק שלישי'
     };
 
-    const example = examples[topic];
+    const exampleEntry = examples[topic];
 
-    if (example) {
-      const escapedExample = this.escapeHtml(example);
-      await this.bot.sendMessage(chatId,
-        `<b>📋 דוגמה להעתקה:</b>\n<pre><code>${escapedExample}</code></pre>\n\n` +
-        '💡 העתק את הטקסט למעלה ונסה אותו ב-/sandbox',
-        { parse_mode: 'HTML' }
-      );
+    if (exampleEntry) {
+      const previewText = typeof exampleEntry === 'string' ? '' : (exampleEntry.preview || '');
+      const copyText = typeof exampleEntry === 'string' ? exampleEntry : exampleEntry.copy;
+
+      if (!copyText) {
+        return;
+      }
+
+      const escapedCopy = this.escapeHtml(copyText);
+      let previewSection = '';
+
+      if (previewText) {
+        const escapedPreview = this.escapeHtml(previewText).replace(/\n/g, '<br>');
+        previewSection = `${escapedPreview}\n\n`;
+      }
+
+      const htmlMessage =
+        `<b>📋 דוגמה להעתקה:</b>\n` +
+        `${previewSection}<pre><code>${escapedCopy}</code></pre>\n\n` +
+        '💡 העתק את הטקסט למעלה ונסה אותו ב-/sandbox';
+
+      await this.safeSendHtml(chatId, htmlMessage, { disable_web_page_preview: true });
     }
   }
 
@@ -997,9 +1017,10 @@ class MessageHandler {
         // Update topic performance
         this.db.updateTopicPerformance(userId, modeData.topic, false);
 
+        const escapedReason = validation.reason ? this.escapeMarkdownText(validation.reason) : '';
         await this.bot.sendMessage(chatId,
           `❌ *${currentChallenge.wrongFeedback}*\n\n` +
-          `${validation.reason ? '🔍 ' + validation.reason + '\n\n' : ''}` +
+          `${escapedReason ? '🔍 ' + escapedReason + '\n\n' : ''}` +
           `💡 רוצה לנסות שוב? שלח תשובה חדשה.\n` +
           `או לחץ על "רמז" לעזרה.`,
           {
@@ -1745,6 +1766,34 @@ class MessageHandler {
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#39;');
+  }
+
+  stripHtmlTags(text = '') {
+    return String(text).replace(/<[^>]*>/g, '');
+  }
+
+  async safeSendHtml(chatId, html, options = {}) {
+    try {
+      return await this.bot.sendMessage(chatId, html, { parse_mode: 'HTML', ...options });
+    } catch (err) {
+      const desc = String(err?.response?.body?.description || err?.message || '').toLowerCase();
+      if (desc.includes('parse') || desc.includes('entity')) {
+        const plain = this.stripHtmlTags(html)
+          .replace(/&lt;/g, '<')
+          .replace(/&gt;/g, '>')
+          .replace(/&amp;/g, '&')
+          .replace(/&quot;/g, '"')
+          .replace(/&#39;/g, '\'');
+        const fallbackOptions = { ...options };
+        delete fallbackOptions.parse_mode;
+        return await this.bot.sendMessage(chatId, plain, fallbackOptions);
+      }
+      throw err;
+    }
+  }
+
+  escapeMarkdownText(text = '') {
+    return String(text).replace(/([_*\[\]()~`>#+\-=|{}.!\\])/g, '\\$1');
   }
 
   reconstructMarkdownFromEntities(text, entities = []) {
