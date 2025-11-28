@@ -94,9 +94,10 @@ class MessageHandler {
 
       // Get user's theme preference
       const theme = this.db.getSandboxTheme(userId);
+      const cleanMarkdown = this.normalizeSandboxMarkdown(markdownText);
 
       // Render markdown to image
-      const imagePath = await this.renderer.renderMarkdown(markdownText, userId, theme);
+      const imagePath = await this.renderer.renderMarkdown(cleanMarkdown, userId, theme);
 
       // Delete processing message
       await this.bot.deleteMessage(chatId, processingMsg.message_id);
@@ -443,10 +444,11 @@ class MessageHandler {
         title: '🖼️ תמונות',
         content:
           '*תמונות:*\n\n' +
-          '`![תיאור התמונה](https://example.com/image.jpg)`\n\n' +
-          '💡 כמו קישור, רק עם ! בהתחלה\n\n' +
+          '`![תיאור ברור](https://example.com/image.jpg)`\n' +
+          '`![טקסט חלופי אמיתי](https://cdn.example.com/team.png)`\n\n' +
+          '💡 כתוב טקסט שמתאר מה רואים בתמונה (נגישות!)\n\n' +
           '👇 לחץ על הכפתור להעתקת דוגמה',
-        example: '![לוגו של החברה](https://via.placeholder.com/150)\n![תמונה יפה](https://example.com/photo.jpg)'
+        example: '![לוח משימות שבועי](https://images.unsplash.com/photo-1556155092-490a1ba16284?auto=format&fit=crop&w=800&q=80)\n![צילום מסך של האפליקציה](https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=800&q=80)'
       },
       tables: {
         title: '📊 טבלאות',
@@ -514,7 +516,7 @@ class MessageHandler {
       links: '[גוגל](https://google.com)\n<https://github.com>\n\n[המדריך שלי][guide]\n[guide]: https://example.com',
       quotes: '> זה ציטוט חשוב\n> המשך הציטוט\n\n> ציטוט ראשי\n>> ציטוט בתוך ציטוט',
       code: 'השתמש בפונקציה `console.log()` להדפסה.\n\n```javascript\nfunction greet(name) {\n  return `Hello, ${name}!`;\n}\n```',
-      images: '![לוגו של החברה](https://via.placeholder.com/150)\n![תמונה יפה](https://example.com/photo.jpg)',
+      images: '![לוח משימות שבועי](https://images.unsplash.com/photo-1556155092-490a1ba16284?auto=format&fit=crop&w=800&q=80)\n![צילום מסך של האפליקציה](https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=800&q=80)',
       tables: '| שם | גיל | עיר |\n|:---|:---:|---:|\n| יוסי | 25 | תל אביב |\n| שרה | 30 | ירושלים |',
       tasks: '- [x] למדתי Markdown\n- [x] תרגלתי עם הבוט\n- [ ] בניתי פרויקט משלי',
       lines: 'חלק ראשון\n\n---\n\nחלק שני\n\n***\n\nחלק שלישי'
@@ -523,13 +525,11 @@ class MessageHandler {
     const example = examples[topic];
 
     if (example) {
+      const escapedExample = this.escapeHtml(example);
       await this.bot.sendMessage(chatId,
-        '📋 *דוגמה להעתקה:*\n\n' +
-        '```\n' +
-        example +
-        '\n```\n\n' +
+        `<b>📋 דוגמה להעתקה:</b>\n<pre><code>${escapedExample}</code></pre>\n\n` +
         '💡 העתק את הטקסט למעלה ונסה אותו ב-/sandbox',
-        { parse_mode: 'Markdown' }
+        { parse_mode: 'HTML' }
       );
     }
   }
@@ -1730,6 +1730,23 @@ class MessageHandler {
   // ========================================
   // Helper Functions
   // ========================================
+  normalizeSandboxMarkdown(text = '') {
+    if (!text) return '';
+    return String(text)
+      .replace(/\r\n/g, '\n')
+      .replace(/[\u200f\u200e]/g, '')
+      .replace(/\ufeff/g, '');
+  }
+
+  escapeHtml(text = '') {
+    return String(text)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
   reconstructMarkdownFromEntities(text, entities = []) {
     if (!text || !Array.isArray(entities) || entities.length === 0) {
       return text;

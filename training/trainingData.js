@@ -354,7 +354,7 @@ const challenges = {
       },
       hint: 'תרשים זרימה: flowchart LR\nA[התחלה] --> B[עיבוד]',
       correctFeedback: 'יפה! יצרת תרשים זרימה בסיסי - דרך מעולה להמחיש תהליכים.',
-      wrongFeedback: 'זכור: בלוק mermaid מתחיל ב-```mermaid וצמתים מתחברים עם -->',
+      wrongFeedback: 'זכור: פתח בלוק mermaid עם שלוש backticks + המילה mermaid וסגור אותו שוב בשלוש backticks. השתמש ב--> כדי לחבר בין הצמתים.',
       example: '```mermaid\nflowchart LR\n    A[התחלה] --> B[עיבוד]\n    B --> C[סיום]\n```'
     },
     {

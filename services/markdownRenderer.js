@@ -175,6 +175,32 @@ class MarkdownRenderer {
 
     ${themeCSS}
 
+    /* Sandbox readability overrides */
+    .markdown-body {
+      text-align: initial;
+      line-height: 1.6;
+    }
+
+    .markdown-body p {
+      margin: 0.35em 0;
+    }
+
+    .markdown-body ul,
+    .markdown-body ol {
+      margin: 0.75em 0;
+      padding-inline-start: 1.5em;
+    }
+
+    .markdown-body li {
+      margin: 0.15em 0;
+      padding: 0;
+      line-height: 1.5;
+    }
+
+    .markdown-body li > p {
+      margin: 0;
+    }
+
     /* Mermaid diagram styles */
     .mermaid {
       direction: ltr;
