@@ -96,29 +96,50 @@ class MessageHandler {
       const theme = this.db.getSandboxTheme(userId);
       let cleanMarkdown = this.normalizeSandboxMarkdown(markdownText);
 
-      // Unwrap code blocks if the user sent the message as a code block (Telegram formatting)
-      const codeBlockRegex = /^```(\w*)\n([\s\S]*)\n```$/;
+      // 1. Check for wrapped code block with more flexible regex
+      // Allows optional language, and tolerant of whitespace/newlines around content
+      const codeBlockRegex = /^```(\w*)\s*\n([\s\S]*?)```\s*$/;
       const match = cleanMarkdown.match(codeBlockRegex);
+
+      const mermaidTypes = ['mermaid', 'graph', 'flowchart', 'sequenceDiagram', 'classDiagram', 'stateDiagram', 'erDiagram', 'gantt', 'pie', 'gitGraph', 'mindmap', 'timeline', 'quadrantChart'];
+
       if (match) {
-        const lang = match[1];
-        const content = match[2];
-        
-        // If it's a mermaid block or looks like one, ensure it's wrapped as mermaid
-        // Common mermaid diagram types
-        const mermaidTypes = ['mermaid', 'graph', 'flowchart', 'sequenceDiagram', 'classDiagram', 'stateDiagram', 'erDiagram', 'gantt', 'pie', 'gitGraph'];
+        // It IS a code block. Unwrap it to inspect content.
+        const lang = (match[1] || '').trim().toLowerCase();
+        let content = match[2]; // Content inside backticks
+
+        // Remove "mermaid" keyword from the content itself if present at start (sometimes users double it)
         const firstLine = content.trim().split('\n')[0].trim();
-        
-        if (lang === 'mermaid' || mermaidTypes.some(type => firstLine.startsWith(type))) {
-           // Remove "mermaid" from content if it was there to avoid duplication if we add it back
-           const innerContent = content.trim().startsWith('mermaid') 
-             ? content.replace(/^mermaid\s*\n/, '') 
-             : content;
-             
-           cleanMarkdown = '```mermaid\n' + innerContent + '\n```';
-        } else {
-           // Unwrap other markdown (tables, lists, headers) to render them as elements
-           cleanMarkdown = content;
+        if (firstLine === 'mermaid') {
+          content = content.replace(/^\s*mermaid\s*\n?/, '');
         }
+
+        if (lang === 'mermaid' || mermaidTypes.some(type => firstLine.startsWith(type))) {
+          // It is mermaid. Ensure it's wrapped in ```mermaid
+          cleanMarkdown = '```mermaid\n' + content.trim() + '\n```';
+        } else {
+          // It's some other code block (or no lang).
+          // Unwrap it so marked can render it as elements (e.g. table, headers)
+          // UNLESS it looks like mermaid inside but user didn't specify lang?
+          const innerFirstLine = content.trim().split('\n')[0].trim();
+          if (mermaidTypes.some(type => innerFirstLine.startsWith(type))) {
+             cleanMarkdown = '```mermaid\n' + content.trim() + '\n```';
+          } else {
+             // For tables and images, we generally want them unwrapped to render as HTML elements,
+             // NOT as a pre/code block.
+             // Ensure surrounding newlines for safety with tables/lists
+             cleanMarkdown = '\n' + content.trim() + '\n';
+          }
+        }
+      } else {
+        // It is NOT wrapped in a code block.
+        // Check if it starts with a mermaid keyword
+        const firstLine = cleanMarkdown.trim().split('\n')[0].trim();
+        if (mermaidTypes.some(type => firstLine.startsWith(type))) {
+          // Wrap it!
+          cleanMarkdown = '```mermaid\n' + cleanMarkdown.trim() + '\n```';
+        }
+        // If not mermaid, leave as is (tables/images work fine as plain text)
       }
 
       // Render markdown to image
