@@ -94,7 +94,8 @@ class MessageHandler {
 
       // Get user's theme preference
       const theme = this.db.getSandboxTheme(userId);
-      let cleanMarkdown = this.normalizeSandboxMarkdown(markdownText);
+      // Trim input to avoid accidental indentation (which creates code blocks)
+      let cleanMarkdown = this.normalizeSandboxMarkdown(markdownText).trim();
 
       // 1. Check for wrapped code block with more flexible regex
       // Allows optional language, and tolerant of whitespace/newlines around content
@@ -135,9 +136,18 @@ class MessageHandler {
         // It is NOT wrapped in a code block.
         // Check if it starts with a mermaid keyword
         const firstLine = cleanMarkdown.trim().split('\n')[0].trim();
-        if (mermaidTypes.some(type => firstLine.startsWith(type))) {
+        const foundType = mermaidTypes.find(type => firstLine.startsWith(type));
+        
+        if (foundType) {
+          let content = cleanMarkdown.trim();
+          // If the type matched is explicitly "mermaid", remove it from the content
+          // so we don't duplicate it inside the block or confuse the renderer
+          if (firstLine === 'mermaid') {
+             content = content.replace(/^mermaid\s*\n?/, '');
+          }
+          
           // Wrap it!
-          cleanMarkdown = '```mermaid\n' + cleanMarkdown.trim() + '\n```';
+          cleanMarkdown = '```mermaid\n' + content + '\n```';
         }
         // If not mermaid, leave as is (tables/images work fine as plain text)
       }
@@ -1093,11 +1103,10 @@ class MessageHandler {
   }
 
   async sendTrainingChallenge(chatId, userId, challenge) {
-    await this.bot.sendMessage(chatId,
+    await this.safeSendMarkdown(chatId,
       `🎯 *אתגר ${challenge.difficulty === 'easy' ? 'קל' : challenge.difficulty === 'medium' ? 'בינוני' : challenge.difficulty === 'hard' ? 'קשה' : 'מאתגר'}*\n\n` +
       challenge.question,
       {
-        parse_mode: 'Markdown',
         reply_markup: {
           inline_keyboard: [
             [
@@ -1124,10 +1133,9 @@ class MessageHandler {
       const challenges = TrainingData.getChallengesByTopic(modeData.topic);
       const currentChallenge = challenges[modeData.currentChallengeIndex];
 
-      await this.bot.sendMessage(chatId,
+      await this.safeSendMarkdown(chatId,
         `💡 *רמז:*\n${currentChallenge.hint}\n\n` +
-        `*דוגמה:*\n\`\`\`\n${currentChallenge.example}\n\`\`\``,
-        { parse_mode: 'Markdown' }
+        `*דוגמה:*\n\`\`\`\n${currentChallenge.example}\n\`\`\``
       );
     } catch (error) {
       console.error('Error showing hint:', error);
