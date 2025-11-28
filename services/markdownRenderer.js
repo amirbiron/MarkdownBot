@@ -98,6 +98,15 @@ class MarkdownRenderer {
         waitUntil: 'networkidle0'
       });
 
+      // Wait for Mermaid to render if present
+      if (fullHtml.includes('class="mermaid"')) {
+        try {
+          await page.waitForSelector('.mermaid svg', { timeout: 5000 });
+        } catch (e) {
+          console.warn('Mermaid rendering timed out or failed:', e.message);
+        }
+      }
+
       // Get the content height
       const contentHeight = await page.evaluate(() => {
         return document.querySelector('.markdown-body').scrollHeight;

@@ -94,7 +94,32 @@ class MessageHandler {
 
       // Get user's theme preference
       const theme = this.db.getSandboxTheme(userId);
-      const cleanMarkdown = this.normalizeSandboxMarkdown(markdownText);
+      let cleanMarkdown = this.normalizeSandboxMarkdown(markdownText);
+
+      // Unwrap code blocks if the user sent the message as a code block (Telegram formatting)
+      const codeBlockRegex = /^```(\w*)\n([\s\S]*)\n```$/;
+      const match = cleanMarkdown.match(codeBlockRegex);
+      if (match) {
+        const lang = match[1];
+        const content = match[2];
+        
+        // If it's a mermaid block or looks like one, ensure it's wrapped as mermaid
+        // Common mermaid diagram types
+        const mermaidTypes = ['mermaid', 'graph', 'flowchart', 'sequenceDiagram', 'classDiagram', 'stateDiagram', 'erDiagram', 'gantt', 'pie', 'gitGraph'];
+        const firstLine = content.trim().split('\n')[0].trim();
+        
+        if (lang === 'mermaid' || mermaidTypes.some(type => firstLine.startsWith(type))) {
+           // Remove "mermaid" from content if it was there to avoid duplication if we add it back
+           const innerContent = content.trim().startsWith('mermaid') 
+             ? content.replace(/^mermaid\s*\n/, '') 
+             : content;
+             
+           cleanMarkdown = '```mermaid\n' + innerContent + '\n```';
+        } else {
+           // Unwrap other markdown (tables, lists, headers) to render them as elements
+           cleanMarkdown = content;
+        }
+      }
 
       // Render markdown to image
       const imagePath = await this.renderer.renderMarkdown(cleanMarkdown, userId, theme);
@@ -984,10 +1009,9 @@ class MessageHandler {
         // Update topic performance
         this.db.updateTopicPerformance(userId, modeData.topic, true);
 
-        await this.bot.sendMessage(chatId,
+        await this.safeSendMarkdown(chatId,
           `✅ *${currentChallenge.correctFeedback}*\n\n` +
-          `📈 התקדמות: ${modeData.challengesCompleted}/${modeData.totalChallenges}`,
-          { parse_mode: 'Markdown' }
+          `📈 התקדמות: ${modeData.challengesCompleted}/${modeData.totalChallenges}`
         );
 
         await this.sleep(2000);
@@ -1018,13 +1042,12 @@ class MessageHandler {
         this.db.updateTopicPerformance(userId, modeData.topic, false);
 
         const escapedReason = validation.reason ? this.escapeMarkdownText(validation.reason) : '';
-        await this.bot.sendMessage(chatId,
+        await this.safeSendMarkdown(chatId,
           `❌ *${currentChallenge.wrongFeedback}*\n\n` +
           `${escapedReason ? '🔍 ' + escapedReason + '\n\n' : ''}` +
           `💡 רוצה לנסות שוב? שלח תשובה חדשה.\n` +
           `או לחץ על "רמז" לעזרה.`,
           {
-            parse_mode: 'Markdown',
             reply_markup: {
               inline_keyboard: [
                 [
