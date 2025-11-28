@@ -256,3 +256,19 @@ body {
   transform: scale(1.02);
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
 }
+
+/* GitHub Alerts */
+.markdown-alert-note { border-color: #0969da; background-color: #ddf4ff; color: #1f2328; }
+.markdown-alert-note .markdown-alert-title { color: #0969da; }
+
+.markdown-alert-tip { border-color: #1a7f37; background-color: #dafbe1; color: #1f2328; }
+.markdown-alert-tip .markdown-alert-title { color: #1a7f37; }
+
+.markdown-alert-important { border-color: #8250df; background-color: #f8f0fc; color: #1f2328; }
+.markdown-alert-important .markdown-alert-title { color: #8250df; }
+
+.markdown-alert-warning { border-color: #9a6700; background-color: #fff8c5; color: #1f2328; }
+.markdown-alert-warning .markdown-alert-title { color: #9a6700; }
+
+.markdown-alert-caution { border-color: #d1242f; background-color: #ffebe9; color: #1f2328; }
+.markdown-alert-caution .markdown-alert-title { color: #d1242f; }

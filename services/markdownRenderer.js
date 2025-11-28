@@ -24,6 +24,22 @@ class MarkdownRenderer {
       return originalCodeRenderer(code, language);
     };
 
+    renderer.blockquote = function(quote) {
+      const alertPattern = /^<p>\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]/i;
+      const match = quote.match(alertPattern);
+      
+      if (match) {
+        const type = match[1].toLowerCase();
+        let content = quote.replace(alertPattern, '<p>');
+        
+        return `<div class="markdown-alert markdown-alert-${type}">
+          <p class="markdown-alert-title">${type.charAt(0).toUpperCase() + type.slice(1)}</p>
+          ${content}
+        </div>`;
+      }
+      return `<blockquote>\n${quote}</blockquote>\n`;
+    };
+
     // Configure marked options (keep all flags enabled while using the custom renderer)
     marked.setOptions({
       breaks: true,
@@ -213,6 +229,21 @@ class MarkdownRenderer {
       direction: ltr;
       text-align: center;
       margin: 1em auto;
+    }
+
+    /* GitHub Alerts */
+    .markdown-alert {
+      padding: 0.5rem 1rem;
+      margin-bottom: 1rem;
+      border-left: 0.25em solid;
+      border-radius: 6px;
+    }
+    
+    .markdown-alert-title {
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      margin-bottom: 0.5rem;
     }
   </style>
   <script type="module">
