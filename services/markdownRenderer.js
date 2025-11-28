@@ -13,18 +13,6 @@ class MarkdownRenderer {
       fs.mkdirSync(this.outputDir, { recursive: true });
     }
 
-    // Configure marked options
-    marked.setOptions({
-      breaks: true,
-      gfm: true, // GitHub Flavored Markdown
-      tables: true,
-      pedantic: false,
-      sanitize: false,
-      smartLists: true,
-      smartypants: false,
-      renderer: new marked.Renderer()
-    });
-
     // Custom renderer for code blocks to support Mermaid
     const renderer = new marked.Renderer();
     const originalCodeRenderer = renderer.code.bind(renderer);
@@ -36,7 +24,17 @@ class MarkdownRenderer {
       return originalCodeRenderer(code, language);
     };
 
-    marked.setOptions({ renderer });
+    // Configure marked options (keep all flags enabled while using the custom renderer)
+    marked.setOptions({
+      breaks: true,
+      gfm: true, // GitHub Flavored Markdown
+      tables: true,
+      pedantic: false,
+      sanitize: false,
+      smartLists: true,
+      smartypants: false,
+      renderer
+    });
   }
 
   // ========================================
