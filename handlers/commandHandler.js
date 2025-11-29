@@ -80,6 +80,7 @@ class CommandHandler {
       `/themes - בחר ערכת נושא לארגז החול\n` +
       `/templates - תבניות Markdown מוכנות לשימוש\n` +
       `/cheatsheet - הצג מדריך מהיר\n` +
+      `/didyouknow - כרטיסיות "הידעת?" קצרות\n` +
       `/markdown_guide - מדריך Markdown לטלגרם\n` +
       `/exit - צא ממצב מעבדה\n\n` +
       `👥 *ספרייה קהילתית:*\n` +
@@ -390,6 +391,47 @@ class CommandHandler {
         }
       }
     );
+  }
+
+  // ========================================
+  // /didyouknow - Show rotating quick tips
+  // ========================================
+  async handleDidYouKnow(msg) {
+    const chatId = msg.chat.id;
+    const userId = msg.from.id;
+
+    this.db.updateLastActive(userId);
+
+    try {
+      const DidYouKnowData = require('../lessons/didYouKnowData');
+      const payload = DidYouKnowData.getCardPayload(0);
+
+      if (!payload) {
+        await this.bot.sendMessage(chatId,
+          'אין כרגע כרטיסיות "הידעת?" להצגה. נסו שוב מאוחר יותר.'
+        );
+        return;
+      }
+
+      await this.safeSendMarkdown(chatId, payload.fact.message, {
+        disable_web_page_preview: true,
+        reply_markup: {
+          inline_keyboard: [
+            [
+              {
+                text: DidYouKnowData.NEXT_BUTTON_TEXT,
+                callback_data: `didyouknow_${payload.nextIndex}`
+              }
+            ]
+          ]
+        }
+      });
+    } catch (error) {
+      console.error('Error sending Did You Know card:', error);
+      await this.bot.sendMessage(chatId,
+        '❌ אופס! לא הצלחתי להציג את הכרטיס. נסו שוב מאוחר יותר.'
+      );
+    }
   }
 
   // ========================================
@@ -1380,8 +1422,9 @@ await update.message.reply_text(msg, parse_mode="MarkdownV2")
       keyboard: [
         [{ text: '📚 שיעור הבא' }, { text: '🧪 מעבדה' }],
         [{ text: '🎯 אימון' }, { text: '📊 התקדמות' }],
-        [{ text: '📋 מדריך מהיר' }, { text: '📚 תבניות' }],
-        [{ text: '📖 מדריך טלגרם' }, { text: '❓ עזרה' }]
+        [{ text: '📋 מדריך מהיר' }, { text: '💡 הידעת?' }],
+        [{ text: '📚 תבניות' }, { text: '📖 מדריך טלגרם' }],
+        [{ text: '❓ עזרה' }]
       ],
       resize_keyboard: true,
       one_time_keyboard: false

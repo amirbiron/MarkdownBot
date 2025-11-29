@@ -112,6 +112,7 @@ markdown-trainer-bot/
 | `/templates` | גישה לתבניות Markdown מוכנות |
 | `/progress` | הצג התקדמות וסטטיסטיקות |
 | `/cheatsheet` | מדריך מהיר לתחביר |
+| `/didyouknow` | כרטיסיות "הידעת?" חכמות |
 | `/help` | הצג עזרה |
 
 ### זרימת למידה
