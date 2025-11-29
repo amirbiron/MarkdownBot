@@ -46,6 +46,7 @@ class MessageHandler {
       '🎯 אימון',
       '📊 התקדמות',
       '📋 מדריך מהיר',
+      '💡 הידעת?',
       '📚 תבניות',
       '📖 מדריך טלגרם',
       '❓ עזרה'
@@ -200,6 +201,9 @@ class MessageHandler {
     } else if (text === '📋 מדריך מהיר') {
       await cmdHandler.handleCheatsheet(msg);
       return;
+    } else if (text === '💡 הידעת?') {
+      await cmdHandler.handleDidYouKnow(msg);
+      return;
     } else if (text === '📚 תבניות') {
       await cmdHandler.handleTemplates(msg);
       return;
@@ -253,6 +257,8 @@ class MessageHandler {
       await this.handleThemeSelection(chatId, userId, data, messageId);
     } else if (data.startsWith('cheat_')) {
       await this.handleCheatsheetTopic(chatId, userId, data, query.message.message_id);
+    } else if (data.startsWith('didyouknow_')) {
+      await this.handleDidYouKnowNavigation(chatId, userId, data, messageId);
     } else if (data.startsWith('copy_')) {
       await this.handleCopyExample(chatId, userId, data);
     } else if (data.startsWith('download_')) {
@@ -556,6 +562,37 @@ class MessageHandler {
           ]
         }
       });
+    }
+  }
+
+  // ========================================
+  // Handle Did-You-Know carousel navigation
+  // ========================================
+  async handleDidYouKnowNavigation(chatId, userId, data, messageId) {
+    const DidYouKnowData = require('../lessons/didYouKnowData');
+    const targetIndex = parseInt(data.replace('didyouknow_', ''), 10);
+    const payload = DidYouKnowData.getCardPayload(Number.isNaN(targetIndex) ? 0 : targetIndex);
+
+    if (!payload) {
+      return;
+    }
+
+    const inlineKeyboard = [
+      [
+        {
+          text: DidYouKnowData.NEXT_BUTTON_TEXT,
+          callback_data: `didyouknow_${payload.nextIndex}`
+        }
+      ]
+    ];
+
+    try {
+      await this.safeEditMarkdown(chatId, messageId, payload.fact.message, {
+        disable_web_page_preview: true,
+        reply_markup: { inline_keyboard: inlineKeyboard }
+      });
+    } catch (error) {
+      console.error('Error updating Did You Know card:', error && error.message ? error.message : error);
     }
   }
 
@@ -955,6 +992,41 @@ class MessageHandler {
       if (desc.includes("can't parse entities") || desc.includes('parse') || desc.includes('entity')) {
         // Retry without parse mode
         return await this.bot.sendMessage(chatId, text, { ...options });
+      }
+      throw err;
+    }
+  }
+
+  // Attempt to edit message with Markdown, ignoring "message is not modified"
+  async safeEditMarkdown(chatId, messageId, text, options = {}) {
+    try {
+      return await this.bot.editMessageText(text, {
+        chat_id: chatId,
+        message_id: messageId,
+        parse_mode: 'Markdown',
+        ...options
+      });
+    } catch (err) {
+      const desc = String(err?.response?.body?.description || err?.message || '').toLowerCase();
+      if (desc.includes('message is not modified')) {
+        return null;
+      }
+      if (desc.includes("can't parse entities") || desc.includes('parse') || desc.includes('entity')) {
+        const fallbackOptions = { ...options };
+        delete fallbackOptions.parse_mode;
+        try {
+          return await this.bot.editMessageText(text, {
+            chat_id: chatId,
+            message_id: messageId,
+            ...fallbackOptions
+          });
+        } catch (fallbackError) {
+          const fallbackDesc = String(fallbackError?.response?.body?.description || fallbackError?.message || '').toLowerCase();
+          if (fallbackDesc.includes('message is not modified')) {
+            return null;
+          }
+          throw fallbackError;
+        }
       }
       throw err;
     }

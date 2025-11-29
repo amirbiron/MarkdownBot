@@ -151,6 +151,13 @@ if (bot && commandHandler && messageHandler) {
     }
   });
 
+  // Handle /didyouknow command (quick tips carousel)
+  bot.onText(/\/didyouknow/, async (msg) => {
+    if (await maintenanceMiddleware(msg, () => true)) {
+      commandHandler.handleDidYouKnow(msg);
+    }
+  });
+
   // Handle /markdown_guide command (Telegram Markdown guide)
   bot.onText(/\/markdown_guide/, async (msg) => {
     if (await maintenanceMiddleware(msg, () => true)) {
