@@ -26,7 +26,7 @@ class CommandHandler {
       this.db.createUser(userId, username, firstName, lastName, languageCode);
       
       // Send welcome message for new users
-      await this.sendWelcomeSequence(chatId, firstName);
+      await this.sendWelcomeSequence(chatId, firstName, userId);
     } else {
       // Existing user - send welcome back message
       const progress = this.db.getUserProgress(userId);
@@ -39,12 +39,12 @@ class CommandHandler {
         `⭐ ניקוד: ${progress.total_score}\n` +
         `📚 שיעורים שהושלמו: ${progress.lessons_completed}\n\n` +
         `השתמש בכפתורים למטה לניווט מהיר! 👇`,
-        { reply_markup: this.getMainKeyboard() }
+        { reply_markup: this.getMainKeyboard(userId) }
       );
     }
   }
 
-  async sendWelcomeSequence(chatId, firstName) {
+  async sendWelcomeSequence(chatId, firstName, userId) {
     // Message 1: Welcome
     await this.bot.sendMessage(chatId,
       `היי ${firstName}, ברוכ/ה הבא/ה ל-Markdown Trainer! 🤖\n\n` +
@@ -52,7 +52,7 @@ class CommandHandler {
       `מה זה Markdown?\n` +
       `זו שפת סימון פשוטה שמאפשרת לך לעצב טקסט (כמו כותרות, רשימות והדגשות) באמצעות תווים פשוטים, בלי להסתבך עם תפריטים ועכבר.\n\n` +
       `מוכנ/ה להתחיל? השתמש בכפתורים למטה או שלח /next לשיעור הראשון! 🚀`,
-      { reply_markup: this.getMainKeyboard() }
+      { reply_markup: this.getMainKeyboard(userId) }
     );
   }
 
@@ -79,8 +79,13 @@ class CommandHandler {
       `/sandbox - פתח מעבדת תרגול (Markdown → תמונה)\n` +
       `/themes - בחר ערכת נושא לארגז החול\n` +
       `/templates - תבניות Markdown מוכנות לשימוש\n` +
-      `/cheatsheet - הצג מדריך מהיר\n` +
-      `/didyouknow - כרטיסיות "הידעת?" קצרות\n` +
+      `/cheatsheet - הצג מדריך מהיר\n`;
+
+    if (this.isAdmin(userId)) {
+      helpText += `/didyouknow - כרטיסיות "הידעת?" קצרות\n`;
+    }
+
+    helpText +=
       `/markdown_guide - מדריך Markdown לטלגרם\n` +
       `/exit - צא ממצב מעבדה\n\n` +
       `👥 *ספרייה קהילתית:*\n` +
@@ -401,6 +406,11 @@ class CommandHandler {
     const userId = msg.from.id;
 
     this.db.updateLastActive(userId);
+
+    if (!this.isAdmin(userId)) {
+      await this.bot.sendMessage(chatId, '⛔ קטגוריית "הידעת?" זמינה כרגע רק לחברי צוות.');
+      return;
+    }
 
     try {
       const DidYouKnowData = require('../lessons/didYouKnowData');
@@ -1417,15 +1427,20 @@ await update.message.reply_text(msg, parse_mode="MarkdownV2")
   // ========================================
   // Get main keyboard for easy access
   // ========================================
-  getMainKeyboard() {
+  getMainKeyboard(userId) {
+    const isAdmin = this.isAdmin(userId);
+    const keyboard = [
+      [{ text: '📚 שיעור הבא' }, { text: '🧪 מעבדה' }],
+      [{ text: '🎯 אימון' }, { text: '📊 התקדמות' }],
+      isAdmin
+        ? [{ text: '📋 מדריך מהיר' }, { text: '💡 הידעת?' }]
+        : [{ text: '📋 מדריך מהיר' }],
+      [{ text: '📚 תבניות' }, { text: '📖 מדריך טלגרם' }],
+      [{ text: '❓ עזרה' }]
+    ];
+
     return {
-      keyboard: [
-        [{ text: '📚 שיעור הבא' }, { text: '🧪 מעבדה' }],
-        [{ text: '🎯 אימון' }, { text: '📊 התקדמות' }],
-        [{ text: '📋 מדריך מהיר' }, { text: '💡 הידעת?' }],
-        [{ text: '📚 תבניות' }, { text: '📖 מדריך טלגרם' }],
-        [{ text: '❓ עזרה' }]
-      ],
+      keyboard,
       resize_keyboard: true,
       one_time_keyboard: false
     };
