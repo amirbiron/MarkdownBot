@@ -290,7 +290,31 @@ class MessageHandler {
       await this.handleApproveSubmission(chatId, userId, data, messageId);
     } else if (data.startsWith('reject_sub_')) {
       await this.handleRejectSubmission(chatId, userId, data, messageId);
+    } else if (data === 'restart_lessons') {
+      await this.handleRestartLessons(chatId, userId, messageId);
     }
+  }
+
+  // ========================================
+  // Restart lessons (reset progress)
+  // ========================================
+  async handleRestartLessons(chatId, userId, messageId) {
+    // Try to remove the inline keyboard to prevent double taps
+    try {
+      await this.bot.editMessageReplyMarkup(
+        { inline_keyboard: [] },
+        { chat_id: chatId, message_id: messageId }
+      );
+    } catch (err) {
+      const msg = String(err?.response?.body?.description || err?.message || '').toLowerCase();
+      if (!msg.includes('message is not modified')) {
+        console.warn('editMessageReplyMarkup failed:', msg);
+      }
+    }
+
+    const CommandHandler = require('./commandHandler');
+    const cmdHandler = new CommandHandler(this.bot, this.db);
+    await cmdHandler.handleRestartLessons({ chat: { id: chatId }, from: { id: userId } });
   }
 
   // ========================================

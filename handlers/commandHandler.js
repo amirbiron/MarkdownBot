@@ -69,8 +69,9 @@ class CommandHandler {
       `📚 *עזרה - Markdown Trainer Bot*\n\n` +
       `*פקודות זמינות:*\n\n` +
       `🎓 *למידה:*\n` +
-      `/start - התחל מחדש\n` +
+      `/start - הודעת פתיחה\n` +
       `/next - עבור לשיעור הבא\n` +
+      `/restart_lessons - אפס והתחל את השיעורים מהתחלה\n` +
       `/progress - הצג את ההתקדמות שלך\n\n` +
       `🎯 *אימון ממוקד:*\n` +
       `/train - התחל אימון בנושא ספציפי\n` +
@@ -1064,21 +1065,28 @@ await update.message.reply_text(msg, parse_mode="MarkdownV2")
     const nextLessonId = progress.current_lesson + 1;
 
     // Check if there are more lessons
-    const totalLessons = 39; // We have 39 lessons total (14 lessons + 25 tips)
+    const LessonsData = require('../lessons/lessonsData');
+    const totalLessons = LessonsData.getTotalLessons();
 
     if (nextLessonId > totalLessons) {
       await this.bot.sendMessage(chatId,
         `🎉 *מזל טוב!*\n\n` +
         `סיימת את כל השיעורים!\n\n` +
         `אתה עכשיו אשף Markdown מוסמך! 🏆\n\n` +
-        `המשך לתרגל במעבדה (/sandbox) או עזור לחברים ללמוד Markdown.`,
-        { parse_mode: 'Markdown' }
+        `רוצה להתחיל אותם שוב מההתחלה?`,
+        {
+          parse_mode: 'Markdown',
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: '🔁 להתחיל שוב מההתחלה', callback_data: 'restart_lessons' }]
+            ]
+          }
+        }
       );
       return;
     }
 
     // Load and send the next lesson
-    const LessonsData = require('../lessons/lessonsData');
     const lesson = LessonsData.getLesson(nextLessonId);
 
     if (!lesson) {
@@ -1091,6 +1099,36 @@ await update.message.reply_text(msg, parse_mode="MarkdownV2")
 
     // Send lesson content
     await this.sendLesson(chatId, userId, lesson);
+  }
+
+  // ========================================
+  // /restart_lessons - Reset and start lessons again
+  // ========================================
+  async handleRestartLessons(msg) {
+    const chatId = msg.chat.id;
+    const userId = msg.from.id;
+
+    this.db.updateLastActive(userId);
+
+    const progress = this.db.getUserProgress(userId);
+    if (!progress) {
+      await this.bot.sendMessage(chatId, 'נסה קודם /start');
+      return;
+    }
+
+    try {
+      this.db.resetUserProgress(userId);
+      await this.bot.sendMessage(
+        chatId,
+        '🔁 איפסתי את ההתקדמות שלך (כולל ניקוד והיסטוריה) והתחלנו מחדש מהשיעור הראשון!'
+      );
+
+      // Send lesson 1 immediately
+      await this.handleNext(msg);
+    } catch (e) {
+      console.error('Error restarting lessons:', e);
+      await this.bot.sendMessage(chatId, '❌ שגיאה באיפוס ההתקדמות. נסה שוב מאוחר יותר.');
+    }
   }
 
   // ========================================

@@ -265,7 +265,7 @@ const challenges = {
       id: 'format_hard_1',
       topic: 'text-formatting',
       difficulty: 'hard',
-      question: '✨ *אתגר קשה - ציטוט מעוצב*\n\nצור ציטוט (blockquote) שמכיל:\n- שורה ראשונה: "זה ציטוט חשוב" (חשוב מודגש)\n- שורה שנייה: "מאת פלוני" (בנטוי)',
+      question: '✨ *אתגר קשה - ציטוט מעוצב*\n\nצור ציטוט (blockquote) שמכיל:\n- שורה ראשונה: "זה ציטוט חשוב" (חשוב מודגש)\n- שורה שנייה: "מאת פלוני" (פלוני בנטוי)',
       validationRules: {
         mustInclude: ['>', '**חשוב**', '*פלוני*'],
         hasBlockquote: true
