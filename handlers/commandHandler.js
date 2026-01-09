@@ -1004,12 +1004,18 @@ await update.message.reply_text(msg, parse_mode="MarkdownV2")
       return;
     }
 
-    const totalLessons = 14; // Total number of lessons (excluding tips)
-    const progressPercentage = ((progress.lessons_completed / totalLessons) * 100).toFixed(1);
+    const LessonsData = require('../lessons/lessonsData');
+    const totalLessons = LessonsData.getTotalLessons();
+    const completedLessons = Math.min(progress.lessons_completed || 0, totalLessons);
+    const progressPercentage = totalLessons > 0
+      ? ((completedLessons / totalLessons) * 100).toFixed(1)
+      : '0.0';
     
     // Create progress bar
     const barLength = 10;
-    const filledBars = Math.floor((progress.lessons_completed / totalLessons) * barLength);
+    const filledBars = totalLessons > 0
+      ? Math.floor((completedLessons / totalLessons) * barLength)
+      : 0;
     const progressBar = '█'.repeat(filledBars) + '░'.repeat(barLength - filledBars);
 
     let levelEmoji = '🌱';
@@ -1023,7 +1029,7 @@ await update.message.reply_text(msg, parse_mode="MarkdownV2")
       `⭐ *ניקוד כולל:* ${progress.total_score}\n\n` +
       `📈 *התקדמות בשיעורים:*\n` +
       `${progressBar} ${progressPercentage}%\n` +
-      `${progress.lessons_completed}/${totalLessons} שיעורים הושלמו\n\n` +
+      `${completedLessons}/${totalLessons} שיעורים הושלמו\n\n` +
       `✅ *תשובות נכונות:* ${progress.correct_answers}\n` +
       `❌ *תשובות שגויות:* ${progress.wrong_answers}\n` +
       `🎯 *דיוק:* ${stats.accuracy}%\n\n` +
@@ -1062,13 +1068,22 @@ await update.message.reply_text(msg, parse_mode="MarkdownV2")
       return;
     }
 
-    const nextLessonId = progress.current_lesson + 1;
-
-    // Check if there are more lessons
     const LessonsData = require('../lessons/lessonsData');
-    const totalLessons = LessonsData.getTotalLessons();
+    const lessons = LessonsData.getAllLessons();
+    const totalLessons = lessons.length;
 
-    if (nextLessonId > totalLessons) {
+    if (!totalLessons) {
+      await this.bot.sendMessage(chatId, 'אין כרגע שיעורים זמינים. נסה שוב מאוחר יותר.');
+      return;
+    }
+
+    const currentLessonId = typeof progress.current_lesson === 'number'
+      ? progress.current_lesson
+      : parseInt(progress.current_lesson, 10) || 0;
+    const currentIndex = lessons.findIndex(l => l && l.id === currentLessonId);
+    const nextIndex = currentIndex + 1; // if not found (-1) -> starts from 0
+
+    if (nextIndex >= totalLessons) {
       await this.bot.sendMessage(chatId,
         `🎉 *מזל טוב!*\n\n` +
         `סיימת את כל השיעורים!\n\n` +
@@ -1086,8 +1101,8 @@ await update.message.reply_text(msg, parse_mode="MarkdownV2")
       return;
     }
 
-    // Load and send the next lesson
-    const lesson = LessonsData.getLesson(nextLessonId);
+    // Load and send the next lesson (by the configured order in lessonsData.js)
+    const lesson = lessons[nextIndex];
 
     if (!lesson) {
       await this.bot.sendMessage(chatId, 'שגיאה בטעינת השיעור. נסה שוב מאוחר יותר.');
@@ -1095,7 +1110,7 @@ await update.message.reply_text(msg, parse_mode="MarkdownV2")
     }
 
     // Update current lesson
-    this.db.updateCurrentLesson(userId, nextLessonId);
+    this.db.updateCurrentLesson(userId, lesson.id);
 
     // Send lesson content
     await this.sendLesson(chatId, userId, lesson);
