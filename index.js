@@ -200,6 +200,13 @@ if (bot && commandHandler && messageHandler) {
     }
   });
 
+  // Handle /restart_lessons command (reset and start lessons again)
+  bot.onText(/\/restart_lessons/, async (msg) => {
+    if (await maintenanceMiddleware(msg, () => true)) {
+      commandHandler.handleRestartLessons(msg);
+    }
+  });
+
   // Handle /train command (focused training mode)
   bot.onText(/\/train/, async (msg) => {
     if (await maintenanceMiddleware(msg, () => true)) {
