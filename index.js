@@ -1,6 +1,7 @@
 require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
+const ActivityReporter = require('./activityReporter');
 
 // Ensure Puppeteer knows where Chrome lives on Render
 if (!process.env.PUPPETEER_EXECUTABLE_PATH) {
@@ -42,6 +43,26 @@ const TelegramBot = require('node-telegram-bot-api');
 const Database = require('./database/db');
 const CommandHandler = require('./handlers/commandHandler');
 const MessageHandler = require('./handlers/messageHandler');
+
+// ========================================
+// Activity Reporter (optional)
+// ========================================
+const reporterMongoUri = process.env.ACTIVITY_MONGODB_URI;
+const reporterServiceId = process.env.ACTIVITY_SERVICE_ID;
+const reporterServiceName = process.env.ACTIVITY_SERVICE_NAME || 'MarkdownBot';
+const reporter =
+  reporterMongoUri && reporterServiceId
+    ? new ActivityReporter(reporterMongoUri, reporterServiceId, reporterServiceName)
+    : null;
+
+const reportUserActivity = (userId) => {
+  if (!reporter || !userId) return;
+  try {
+    reporter.reportActivity(userId);
+  } catch (_) {
+    // אל תפיל את הבוט
+  }
+};
 
 // ========================================
 // Bot Initialization
@@ -111,6 +132,7 @@ const maintenanceMiddleware = async (msg, next) => {
 if (bot && commandHandler && messageHandler) {
   // Handle /start command
   bot.onText(/\/start/, async (msg) => {
+    reportUserActivity(msg?.from?.id);
     if (await maintenanceMiddleware(msg, () => true)) {
       commandHandler.handleStart(msg);
     }
@@ -118,6 +140,7 @@ if (bot && commandHandler && messageHandler) {
 
   // Handle /help command
   bot.onText(/\/help/, async (msg) => {
+    reportUserActivity(msg?.from?.id);
     if (await maintenanceMiddleware(msg, () => true)) {
       commandHandler.handleHelp(msg);
     }
@@ -125,6 +148,7 @@ if (bot && commandHandler && messageHandler) {
 
   // Handle /sandbox command
   bot.onText(/\/sandbox/, async (msg) => {
+    reportUserActivity(msg?.from?.id);
     if (await maintenanceMiddleware(msg, () => true)) {
       commandHandler.handleSandbox(msg);
     }
@@ -132,6 +156,7 @@ if (bot && commandHandler && messageHandler) {
 
   // Handle /exit command (exit sandbox mode)
   bot.onText(/\/exit/, async (msg) => {
+    reportUserActivity(msg?.from?.id);
     if (await maintenanceMiddleware(msg, () => true)) {
       commandHandler.handleExit(msg);
     }
@@ -139,6 +164,7 @@ if (bot && commandHandler && messageHandler) {
 
   // Handle /themes command (select sandbox theme)
   bot.onText(/\/themes/, async (msg) => {
+    reportUserActivity(msg?.from?.id);
     if (await maintenanceMiddleware(msg, () => true)) {
       commandHandler.handleThemes(msg);
     }
@@ -146,6 +172,7 @@ if (bot && commandHandler && messageHandler) {
 
   // Handle /cheatsheet command
   bot.onText(/\/cheatsheet/, async (msg) => {
+    reportUserActivity(msg?.from?.id);
     if (await maintenanceMiddleware(msg, () => true)) {
       commandHandler.handleCheatsheet(msg);
     }
@@ -153,6 +180,7 @@ if (bot && commandHandler && messageHandler) {
 
   // Handle /didyouknow command (quick tips carousel)
   bot.onText(/\/didyouknow/, async (msg) => {
+    reportUserActivity(msg?.from?.id);
     if (await maintenanceMiddleware(msg, () => true)) {
       commandHandler.handleDidYouKnow(msg);
     }
@@ -160,6 +188,7 @@ if (bot && commandHandler && messageHandler) {
 
   // Handle /markdown_guide command (Telegram Markdown guide)
   bot.onText(/\/markdown_guide/, async (msg) => {
+    reportUserActivity(msg?.from?.id);
     if (await maintenanceMiddleware(msg, () => true)) {
       commandHandler.handleMarkdownGuide(msg);
     }
@@ -167,6 +196,7 @@ if (bot && commandHandler && messageHandler) {
 
   // Handle /templates command
   bot.onText(/\/templates/, async (msg) => {
+    reportUserActivity(msg?.from?.id);
     if (await maintenanceMiddleware(msg, () => true)) {
       commandHandler.handleTemplates(msg);
     }
@@ -174,6 +204,7 @@ if (bot && commandHandler && messageHandler) {
 
   // Handle /progress command (show user progress)
   bot.onText(/\/progress/, async (msg) => {
+    reportUserActivity(msg?.from?.id);
     if (await maintenanceMiddleware(msg, () => true)) {
       commandHandler.handleProgress(msg);
     }
@@ -181,6 +212,7 @@ if (bot && commandHandler && messageHandler) {
 
   // Handle /reset_progress command (admin only)
   bot.onText(/\/reset_progress/, async (msg) => {
+    reportUserActivity(msg?.from?.id);
     if (await maintenanceMiddleware(msg, () => true)) {
       commandHandler.handleResetProgress(msg);
     }
@@ -188,6 +220,7 @@ if (bot && commandHandler && messageHandler) {
 
   // Handle /statistics command (admin only)
   bot.onText(/\/statistics/, async (msg) => {
+    reportUserActivity(msg?.from?.id);
     if (await maintenanceMiddleware(msg, () => true)) {
       commandHandler.handleStatistics(msg);
     }
@@ -195,6 +228,7 @@ if (bot && commandHandler && messageHandler) {
 
   // Handle /next command (next lesson)
   bot.onText(/\/next/, async (msg) => {
+    reportUserActivity(msg?.from?.id);
     if (await maintenanceMiddleware(msg, () => true)) {
       commandHandler.handleNext(msg);
     }
@@ -202,6 +236,7 @@ if (bot && commandHandler && messageHandler) {
 
   // Handle /restart_lessons command (reset and start lessons again)
   bot.onText(/\/restart_lessons/, async (msg) => {
+    reportUserActivity(msg?.from?.id);
     if (await maintenanceMiddleware(msg, () => true)) {
       commandHandler.handleRestartLessons(msg);
     }
@@ -209,6 +244,7 @@ if (bot && commandHandler && messageHandler) {
 
   // Handle /train command (focused training mode)
   bot.onText(/\/train/, async (msg) => {
+    reportUserActivity(msg?.from?.id);
     if (await maintenanceMiddleware(msg, () => true)) {
       commandHandler.handleTrain(msg);
     }
@@ -216,6 +252,7 @@ if (bot && commandHandler && messageHandler) {
 
   // Handle /cancel_training command (exit training mode)
   bot.onText(/\/cancel_training/, async (msg) => {
+    reportUserActivity(msg?.from?.id);
     if (await maintenanceMiddleware(msg, () => true)) {
       commandHandler.handleCancelTraining(msg);
     }
@@ -223,6 +260,7 @@ if (bot && commandHandler && messageHandler) {
 
   // Handle /submit_template command (submit community template)
   bot.onText(/\/submit_template/, async (msg) => {
+    reportUserActivity(msg?.from?.id);
     if (await maintenanceMiddleware(msg, () => true)) {
       commandHandler.handleSubmitTemplate(msg);
     }
@@ -230,6 +268,7 @@ if (bot && commandHandler && messageHandler) {
 
   // Handle /cancel_submission command (cancel template submission)
   bot.onText(/\/cancel_submission/, async (msg) => {
+    reportUserActivity(msg?.from?.id);
     if (await maintenanceMiddleware(msg, () => true)) {
       commandHandler.handleCancelSubmission(msg);
     }
@@ -237,6 +276,7 @@ if (bot && commandHandler && messageHandler) {
 
   // Handle /my_submissions command (view user's submissions)
   bot.onText(/\/my_submissions/, async (msg) => {
+    reportUserActivity(msg?.from?.id);
     if (await maintenanceMiddleware(msg, () => true)) {
       commandHandler.handleMySubmissions(msg);
     }
@@ -244,6 +284,7 @@ if (bot && commandHandler && messageHandler) {
 
   // Handle /review_templates command (admin only)
   bot.onText(/\/review_templates/, async (msg) => {
+    reportUserActivity(msg?.from?.id);
     if (await maintenanceMiddleware(msg, () => true)) {
       commandHandler.handleReviewTemplates(msg);
     }
@@ -251,6 +292,7 @@ if (bot && commandHandler && messageHandler) {
 
   // Handle callback queries (button clicks)
   bot.on('callback_query', async (query) => {
+    reportUserActivity(query?.from?.id);
     if (await maintenanceMiddleware(query.message, () => true)) {
       messageHandler.handleCallbackQuery(query);
     }
@@ -258,6 +300,7 @@ if (bot && commandHandler && messageHandler) {
 
   // Handle all text messages (for sandbox mode and general chat)
   bot.on('message', async (msg) => {
+    reportUserActivity(msg?.from?.id);
     // Skip if it's a command
     if (msg.text && msg.text.startsWith('/')) {
       return;
