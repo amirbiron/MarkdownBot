@@ -2009,8 +2009,16 @@ class MessageHandler {
           closeWrapper = '~~';
           break;
         case 'code':
-          openWrapper = '`';
-          closeWrapper = '`';
+          // If Telegram marked a multi-line segment as "code", wrap it as a fenced block.
+          // This plays nicer with the /sandbox flow (we often want to unwrap code formatting
+          // and render the content as real Markdown, e.g. task lists / tables).
+          if (String(text).slice(start, end).includes('\n')) {
+            openWrapper = '```\n';
+            closeWrapper = '\n```';
+          } else {
+            openWrapper = '`';
+            closeWrapper = '`';
+          }
           break;
         case 'pre': {
           const language = entity.language ? String(entity.language).trim() : '';
