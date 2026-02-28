@@ -238,15 +238,28 @@ class MessageHandler {
   // Handle Callback Queries (Button Clicks)
   // ========================================
   async handleCallbackQuery(query) {
-    const chatId = query.message.chat.id;
+    const chatId = query.message?.chat?.id;
     const userId = query.from.id;
     const data = query.data;
-    const messageId = query.message.message_id;
+    const messageId = query.message?.message_id;
 
-    this.db.updateLastActive(userId);
+    if (!chatId || !data) {
+      console.warn('⚠️ Callback query missing chat or data:', { chatId, data, userId });
+      return;
+    }
+
+    try {
+      this.db.updateLastActive(userId);
+    } catch (err) {
+      console.warn('⚠️ updateLastActive failed:', err.message);
+    }
 
     // Answer callback to remove loading state
-    await this.bot.answerCallbackQuery(query.id);
+    try {
+      await this.bot.answerCallbackQuery(query.id);
+    } catch (err) {
+      console.warn('⚠️ answerCallbackQuery failed:', err.message);
+    }
 
     // Route based on callback data prefix
     if (data.startsWith('pace_')) {
@@ -256,7 +269,7 @@ class MessageHandler {
     } else if (data.startsWith('theme_')) {
       await this.handleThemeSelection(chatId, userId, data, messageId);
     } else if (data.startsWith('cheat_')) {
-      await this.handleCheatsheetTopic(chatId, userId, data, query.message.message_id);
+      await this.handleCheatsheetTopic(chatId, userId, data, messageId);
     } else if (data.startsWith('didyouknow_')) {
       await this.handleDidYouKnowNavigation(chatId, userId, data, messageId);
     } else if (data.startsWith('copy_')) {
