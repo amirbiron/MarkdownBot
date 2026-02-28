@@ -65,6 +65,39 @@ const reportUserActivity = (userId) => {
 };
 
 // ========================================
+// Spam Filter
+// ========================================
+const SPAM_PATTERNS = [
+  /vpn/i,
+  /neovpn/i,
+  /military[\s-]*grade/i,
+  /aes[\s-]*256/i,
+  /zero\s*logs/i,
+  /online\s+anonymity/i,
+  /hides?\s+your\s+ip/i,
+  /encrypts?\s+your\s+traffic/i,
+  /wi-?fi\s+hack/i,
+  /casino/i,
+  /betting/i,
+  /crypto[\s]*(currency|trading|invest)/i,
+  /make\s+money\s+(fast|online|now)/i,
+  /earn\s+\$?\d{3,}/i,
+  /free\s+(bitcoin|crypto|money)/i,
+  /connect\s+for\s+free/i,
+  /your\s+shield\s+online/i,
+];
+
+const isSpamMessage = (text) => {
+  if (!text) return false;
+  let matchCount = 0;
+  for (const pattern of SPAM_PATTERNS) {
+    if (pattern.test(text)) matchCount++;
+    if (matchCount >= 2) return true;
+  }
+  return false;
+};
+
+// ========================================
 // Bot Initialization
 // ========================================
 const token = process.env.TELEGRAM_BOT_TOKEN;
@@ -292,9 +325,23 @@ if (bot && commandHandler && messageHandler) {
 
   // Handle callback queries (button clicks)
   bot.on('callback_query', async (query) => {
-    reportUserActivity(query?.from?.id);
-    if (await maintenanceMiddleware(query.message, () => true)) {
-      messageHandler.handleCallbackQuery(query);
+    try {
+      reportUserActivity(query?.from?.id);
+      // Build a synthetic msg with the CLICKING USER's identity (query.from),
+      // not query.message.from which is the bot itself.
+      // query.message may also be an InaccessibleMessage (no .from) for old messages.
+      const syntheticMsg = {
+        chat: query.message?.chat || { id: query.from.id },
+        from: query.from,
+      };
+      if (await maintenanceMiddleware(syntheticMsg, () => true)) {
+        await messageHandler.handleCallbackQuery(query);
+      }
+    } catch (error) {
+      console.error('❌ Callback query error:', error.message);
+      try {
+        await bot.answerCallbackQuery(query.id, { text: 'אירעה שגיאה, נסה שוב' });
+      } catch (_) { /* ignore */ }
     }
   });
 
@@ -303,6 +350,12 @@ if (bot && commandHandler && messageHandler) {
     reportUserActivity(msg?.from?.id);
     // Skip if it's a command
     if (msg.text && msg.text.startsWith('/')) {
+      return;
+    }
+
+    // Block spam messages
+    if (isSpamMessage(msg.text)) {
+      console.log(`🚫 Spam blocked from user ${msg.from?.id}: ${(msg.text || '').substring(0, 60)}...`);
       return;
     }
 
