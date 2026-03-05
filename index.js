@@ -315,6 +315,14 @@ if (bot && commandHandler && messageHandler) {
     }
   });
 
+  // Handle /webapp command (link to web app)
+  bot.onText(/\/webapp/, async (msg) => {
+    reportUserActivity(msg?.from?.id);
+    if (await maintenanceMiddleware(msg, () => true)) {
+      commandHandler.handleWebapp(msg);
+    }
+  });
+
   // Handle /review_templates command (admin only)
   bot.onText(/\/review_templates/, async (msg) => {
     reportUserActivity(msg?.from?.id);

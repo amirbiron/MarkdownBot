@@ -80,7 +80,8 @@ class CommandHandler {
       `/sandbox - פתח מעבדת תרגול (Markdown → תמונה)\n` +
       `/themes - בחר ערכת נושא לארגז החול\n` +
       `/templates - תבניות Markdown מוכנות לשימוש\n` +
-      `/cheatsheet - הצג מדריך מהיר\n`;
+      `/cheatsheet - הצג מדריך מהיר\n` +
+      `/webapp - פתח את אפליקציית הווב\n`;
 
     if (this.isAdmin(userId)) {
       helpText += `/didyouknow - כרטיסיות "הידעת?" קצרות\n`;
@@ -1375,6 +1376,23 @@ await update.message.reply_text(msg, parse_mode="MarkdownV2")
   // ========================================
   // /review_templates - Admin: Review pending template submissions
   // ========================================
+  // ========================================
+  // /webapp - Link to the web app
+  // ========================================
+  async handleWebapp(msg) {
+    const chatId = msg.chat.id;
+    const userId = msg.from.id;
+
+    this.db.updateLastActive(userId);
+
+    await this.bot.sendMessage(chatId,
+      `🌐 *Markdown Academy - Web App*\n\n` +
+      `ניתן לגשת לאפליקציית הווב שלנו בקישור הבא:\n\n` +
+      `👉 https://markdown-academy.onrender.com`,
+      { parse_mode: 'Markdown' }
+    );
+  }
+
   async handleReviewTemplates(msg) {
     const chatId = msg.chat.id;
     const userId = msg.from.id;
